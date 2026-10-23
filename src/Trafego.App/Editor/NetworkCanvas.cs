@@ -718,6 +718,7 @@ public sealed class NetworkCanvas : Control
         DrawJunctions(ctx);
         DrawConflictMarkers(ctx);
         DrawMeasurements(ctx);
+        DrawSplitLabels(ctx);
         DrawInputs(ctx);
         DrawHandles(ctx);
         DrawConnectorPreview(ctx);
@@ -1026,6 +1027,17 @@ public sealed class NetworkCanvas : Control
             var p = ToScreen(fl.Axis().At(from.S).Point);
             ctx.DrawLine(new Pen(TravelBrush, 2, new DashStyle([4, 4], 0)), p, P(_mouse));
             ctx.DrawEllipse(TravelBrush, null, p, 4, 4);
+        }
+    }
+
+    /// <summary>Percentual definido no conector (divisão do tráfego), escrito no começo dele.</summary>
+    private void DrawSplitLabels(DrawingContext ctx)
+    {
+        foreach (var c in Net.Connectors)
+        {
+            if (c.SplitPercent is not { } pct || Net.GeometryOf(c) is not { } g) continue;
+            var at = ToScreen(g.Axis.At(Math.Min(g.Axis.Length * 0.35, 25)).Point);
+            DrawLabelAt(ctx, $"{pct:0.#}%", at);
         }
     }
 

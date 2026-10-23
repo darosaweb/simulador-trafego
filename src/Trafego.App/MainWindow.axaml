@@ -229,6 +229,15 @@
               <NumericUpDown x:Name="ConnToS" Grid.Row="7" Grid.Column="1" Minimum="0" Increment="1" FormatString="0.0" ValueChanged="OnConnChanged" />
             </Grid>
             <TextBlock x:Name="ConnInfo" Classes="muted" Margin="0,8,0,0" />
+            <TextBlock Classes="h" Text="DIVISÃO DO TRÁFEGO" />
+            <Grid Classes="form" ColumnDefinitions="110,*" RowDefinitions="Auto,Auto">
+              <CheckBox x:Name="ConnSplitOn" Grid.ColumnSpan="2" Content="Definir o percentual que pega este conector"
+                        IsCheckedChanged="OnConnSplitToggled" />
+              <TextBlock Classes="label" Grid.Row="1" Text="Percentual (%)" />
+              <NumericUpDown x:Name="ConnSplit" Grid.Row="1" Grid.Column="1" Minimum="0" Maximum="100" Increment="5"
+                             FormatString="0.#" ValueChanged="OnConnSplitChanged" />
+            </Grid>
+            <TextBlock x:Name="ConnSplitInfo" Classes="muted" Margin="0,4,0,0" />
             <TextBlock Classes="h" Text="SEMÁFORO" />
             <Grid Classes="form" ColumnDefinitions="110,*" RowDefinitions="Auto,Auto">
               <TextBlock Classes="label" Text="Controlador" />

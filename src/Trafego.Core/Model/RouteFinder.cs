@@ -71,14 +71,15 @@ public static class RouteFinder
             }
             steps.Add(step);
 
-            var options = new List<Action<double>>();
-            if (piece + 1 < topo.PieceCount(link)) options.Add(p => Walk(link, piece + 1, p));
+            // Opções neste ponto e o percentual definido em cada uma (null = parte igual do que sobra).
+            var options = new List<(Action<double> Go, double? Percent)>();
+            if (piece + 1 < topo.PieceCount(link)) options.Add((p => Walk(link, piece + 1, p), null));
             if (outgoing.TryGetValue(new NodeKey(link, piece + 1), out var conns))
             {
                 foreach (var c in conns)
                 {
                     var to = topo.ToNode(c);
-                    options.Add(p =>
+                    options.Add((p =>
                     {
                         var cs = new ConnectorStep(c.Id);
                         if (!used.Add(cs)) { Emit(p); return; }
@@ -87,18 +88,68 @@ public static class RouteFinder
                         else Emit(p);
                         steps.RemoveAt(steps.Count - 1);
                         used.Remove(cs);
-                    });
+                    }, c.SplitPercent));
                 }
             }
 
             if (options.Count == 0) Emit(prob);
-            else foreach (var option in options) option(prob / options.Count);
+            else
+            {
+                var shares = Shares([.. options.Select(o => o.Percent)]);
+                for (var i = 0; i < options.Count; i++)
+                    if (shares[i] > 0) options[i].Go(prob * shares[i]);
+            }
 
             steps.RemoveAt(steps.Count - 1);
             used.Remove(step);
         }
 
         Walk(linkId, 0, 1);
+        return result;
+    }
+
+    /// <summary>
+    /// Como os veículos se dividem num corte de link: seguir no link (ConnectorId null) e cada conector
+    /// que sai dali, com a fração de cada um (somam 1).
+    /// </summary>
+    public static List<(int? ConnectorId, double Share)> SplitAt(Topology topo, NodeKey node)
+    {
+        var net = topo.Network;
+        var options = new List<(int? Id, double? Percent)>();
+        if (topo.Has(node.LinkId) && !topo.IsLinkEnd(node)) options.Add((null, null));
+        foreach (var c in net.Connectors.Where(c => topo.Covers(c) && net.GeometryOf(c) is not null && topo.FromNode(c).Equals(node)))
+            options.Add((c.Id, c.SplitPercent));
+        var shares = Shares([.. options.Select(o => o.Percent)]);
+        return [.. options.Select((o, i) => (o.Id, shares[i]))];
+    }
+
+    /// <summary>
+    /// Divide os veículos entre as opções de um ponto de escolha: as que têm percentual ficam com ele;
+    /// o que sobra vai em partes iguais para as sem percentual. Se não sobra nada ou não há opção sem
+    /// percentual, os percentuais são normalizados para somar 100%.
+    /// </summary>
+    public static double[] Shares(IReadOnlyList<double?> percents)
+    {
+        var n = percents.Count;
+        var result = new double[n];
+        if (n == 0) return result;
+        var set = percents.Where(p => p is not null).Sum(p => Math.Max(0, p!.Value)) / 100;
+        var free = percents.Count(p => p is null);
+        var rest = 1 - set;
+
+        if (free > 0 && rest > 1e-9)
+        {
+            for (var i = 0; i < n; i++)
+                result[i] = percents[i] is { } p ? Math.Max(0, p) / 100 : rest / free;
+            return result;
+        }
+        if (set > 0)
+        {
+            for (var i = 0; i < n; i++)
+                result[i] = percents[i] is { } p ? Math.Max(0, p) / 100 / set : 0;
+            return result;
+        }
+        for (var i = 0; i < n; i++) result[i] = 1.0 / n; // tudo zerado: volta à divisão igual
         return result;
     }
 

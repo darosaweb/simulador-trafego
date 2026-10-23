@@ -257,10 +257,22 @@ ninguém por um tempo.
 
 **Para onde os veículos vão?** Há dois jeitos:
 
-1. **Sem matriz** (o padrão): em cada ponto de escolha (seguir no link ou pegar um conector), as opções têm a
-   mesma chance. Num cruzamento com três saídas, cada uma recebe um terço.
+1. **Sem matriz** (o padrão): em cada ponto de escolha (seguir no link ou pegar um conector), os veículos se
+   dividem. Sem nada definido, as opções têm a mesma chance (num cruzamento com três saídas, um terço cada).
+   Para usar o que você sabe do local, defina o **percentual nos conectores** (veja abaixo).
 2. **Com matriz O/D** (menu **Rede → Demanda…**): você diz quantos veículos por hora vão de cada entrada até
    cada saída da rede.
+
+**Percentual no conector** (divisão do tráfego, como a "decisão de rota" do Vissim): selecione o conector e,
+no painel, marque **Definir o percentual que pega este conector** e digite o valor. Exemplo: numa saída de
+rodovia por onde passam 60% dos veículos, ponha 60 no conector da saída; os 40% restantes seguem na rodovia.
+
+- O que sobra vai, em partes iguais, para as opções sem percentual (seguir no link e os outros conectores).
+  Num cruzamento, dá para pôr só as conversões (ex.: 20% à esquerda, 15% à direita) e o resto segue em frente.
+- O painel mostra como fica a divisão naquele ponto, e o mapa mostra o percentual sobre o conector.
+- Se os percentuais de um ponto somarem mais de 100% (ou menos, sem outra opção), a verificação avisa e eles
+  são ajustados para somar 100%.
+- Vale para entradas **sem** matriz O/D; as entradas com matriz seguem as rotas da matriz.
 
 **Rede → Demanda…**
 
@@ -401,6 +413,9 @@ Sem salvar, o programa usa a pasta temporária do Windows (`%TEMP%\trafego`).
 instalar, feche e abra o terminal e recompile o programa.
 
 **Nenhum carro aparece**: falta uma **entrada** (ferramenta E) ou o volume está zero.
+
+**A divisão numa saída ou num cruzamento não bate com o que se vê no local**: defina o percentual nos
+conectores (seção 9).
 
 **Os carros somem no fim de uma via**: é uma saída da rede (quadrado rosa). Para continuar, ligue o fim dela
 a outra via com um conector.

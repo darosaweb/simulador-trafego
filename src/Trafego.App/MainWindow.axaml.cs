@@ -163,6 +163,21 @@ public partial class MainWindow : Window
         SetItems(ConnGroup, ctrl?.Groups.Select(g => (g.Id, $"G{g.Id} · {g.Name}")).ToList() ?? [], c.Signal?.GroupId ?? -1);
         ConnGroup.IsEnabled = c.Signal is not null;
 
+        // Divisão do tráfego no ponto de onde o conector sai.
+        var topo = _editor.Analysis.Topology;
+        var split = topo.Covers(c) ? RouteFinder.SplitAt(topo, topo.FromNode(c)) : [];
+        var mine = split.FirstOrDefault(s => s.ConnectorId == c.Id).Share;
+        ConnSplitOn.IsChecked = c.SplitPercent is not null;
+        ConnSplit.IsEnabled = c.SplitPercent is not null;
+        ConnSplit.Value = (decimal)Math.Round(c.SplitPercent ?? mine * 100, 1);
+        ConnSplitInfo.Text = split.Count < 2
+            ? "Só há este caminho saindo deste ponto."
+            : "Neste ponto: " + string.Join(" · ", split.Select(s =>
+                  $"{(s.ConnectorId is { } id ? Validation.NameOf(net, id) : $"seguir em {from?.Name}")} {s.Share:P0}")) +
+              (net.Inputs.Any(i => net.Demand.UsesMatrix(i.Id))
+                  ? "\nEntradas com matriz O/D não usam esta divisão (seguem as rotas da matriz)."
+                  : "");
+
         ConnInfo.Text = $"Id {c.Id} · {(len is { } l ? $"{l:0.0} m" : "geometria inválida")} · " +
                         $"{c.Points.Count} ponto(s) intermediário(s)\nFaixa 1 = a da direita, no sentido do tráfego.";
     }
@@ -391,6 +406,21 @@ public partial class MainWindow : Window
         else if (sender == ConnFromS) c.FromS = (double)v;
         else if (sender == ConnToS) c.ToS = (double)v;
         if (_editor.Network.FindLink(c.FromLinkId) is { } from) _editor.Network.FitConnectorsTo(from);
+        _editor.Checkpoint();
+    }
+
+    private void OnConnSplitToggled(object? sender, RoutedEventArgs e)
+    {
+        if (_refreshing || _editor.SelectedConnector is not { } c) return;
+        // Ligando, começa com a parte que o conector já recebia; desligando, volta à divisão igual.
+        c.SplitPercent = ConnSplitOn.IsChecked == true ? (double)(ConnSplit.Value ?? 50) : null;
+        _editor.Checkpoint();
+    }
+
+    private void OnConnSplitChanged(object? sender, NumericUpDownValueChangedEventArgs e)
+    {
+        if (_refreshing || _editor.SelectedConnector is not { } c || c.SplitPercent is null || e.NewValue is not { } v) return;
+        c.SplitPercent = (double)v;
         _editor.Checkpoint();
     }
 

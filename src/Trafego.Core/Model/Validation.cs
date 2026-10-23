@@ -44,6 +44,7 @@ public static class Validation
             if (to.Points.Count >= 2 && (c.ToS < 0 || c.ToS > to.Axis().Length + 1e-6))
                 Error(c.Id, $"{c.Name}: posição de chegada fora de {to.Name}.");
             if (c.FromLinkId == c.ToLinkId) Warn(c.Id, $"{c.Name}: liga {from.Name} a ele mesmo.");
+            if (c.SplitPercent is { } pct && pct is < 0 or > 100) Error(c.Id, $"{c.Name}: o percentual deve ficar entre 0 e 100.");
         }
 
         foreach (var input in net.Inputs)
@@ -63,6 +64,7 @@ public static class Validation
         {
             var analysis = ConflictAnalysis.Of(net);
             CheckSimultaneousGreens(net, analysis, Warn);
+            CheckSplits(net, analysis.Topology, Warn);
             foreach (var (o, d) in net.Demand.Pairs())
                 if (net.FindInput(o) is { } input && RouteFinder.Alternatives(analysis, input.LinkId, d, 1).Count == 0)
                     Warn(o, $"Matriz O/D: não há caminho de {input.Name} até a saída {NameOf(net, d)}.");
@@ -72,6 +74,26 @@ public static class Validation
                           "termine os links antes do cruzamento e ligue por conectores; se for viaduto, marque \"níveis diferentes\".");
         }
         return issues;
+    }
+
+    /// <summary>
+    /// Percentuais dos conectores que saem do mesmo ponto: somando mais de 100%, ou sem chegar a 100%
+    /// quando todas as opções têm percentual, eles são normalizados — vale avisar.
+    /// </summary>
+    private static void CheckSplits(Network net, Topology topo, Action<int, string> warn)
+    {
+        var groups = net.Connectors.Where(topo.Covers).GroupBy(topo.FromNode).Where(g => g.Any(c => c.SplitPercent is not null));
+        foreach (var g in groups)
+        {
+            var sum = g.Sum(c => c.SplitPercent ?? 0);
+            var continues = !topo.IsLinkEnd(g.Key);
+            var allSet = !continues && g.All(c => c.SplitPercent is not null);
+            var where = $"{NameOf(net, g.Key.LinkId)} ({string.Join(", ", g.Select(c => c.Name))})";
+            if (sum > 100 + 1e-6)
+                warn(g.First().Id, $"Os percentuais dos conectores que saem de {where} somam {sum:0}%; serão normalizados para 100%.");
+            else if (allSet && Math.Abs(sum - 100) > 1e-6)
+                warn(g.First().Id, $"Os percentuais dos conectores que saem de {where} somam {sum:0}% e não há outra opção; serão normalizados para 100%.");
+        }
     }
 
     private static void CheckMeasurements(Network net, Action<int, string> error)

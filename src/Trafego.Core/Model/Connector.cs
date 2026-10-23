@@ -32,6 +32,14 @@ public sealed class Connector
 
     /// <summary>Semáforo que controla a entrada no conector (null = sem semáforo).</summary>
     public SignalRef? Signal { get; set; }
+
+    /// <summary>
+    /// Percentual dos veículos que pegam este conector no ponto de onde ele sai (0 a 100), como a
+    /// "decisão de rota" do Vissim numa divergência. O que sobra fica com as opções sem percentual
+    /// (seguir no link e os outros conectores), em partes iguais. Null = parte igual (padrão).
+    /// Vale para entradas sem matriz O/D.
+    /// </summary>
+    public double? SplitPercent { get; set; }
 }
 
 /// <summary>Geometria calculada de um conector.</summary>
