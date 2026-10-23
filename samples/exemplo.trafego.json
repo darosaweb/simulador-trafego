@@ -1,0 +1,27 @@
+{
+  "format": 1,
+  "background": {
+    "imagePath": "local-com-regua.png",
+    "metersPerPixel": 0.6239489295668138,
+    "origin": {
+      "x": 0,
+      "y": 0
+    }
+  },
+  "calibration": {
+    "a": {
+      "x": 746,
+      "y": 160
+    },
+    "b": {
+      "x": 161,
+      "y": 259
+    },
+    "meters": 370.2
+  },
+  "network": {
+    "links": [],
+    "connectors": [],
+    "nextId": 1
+  }
+}

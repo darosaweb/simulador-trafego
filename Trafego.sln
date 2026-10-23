@@ -1,0 +1,50 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{97D3D547-7A41-4459-8B47-8545F6949298}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Trafego.Core", "src\Trafego.Core\Trafego.Core.csproj", "{96778172-D82A-4568-A4E2-556F043EBC13}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{F9D2C8F5-3EFF-4D8D-85DA-E439E87D45F2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Trafego.Core.Tests", "tests\Trafego.Core.Tests\Trafego.Core.Tests.csproj", "{FA5D455F-7FF0-45CF-BC69-34BBA86480AD}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Trafego.App", "src\Trafego.App\Trafego.App.csproj", "{EE39063C-551E-4C55-B94C-1A2B1389077B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Trafego.Sumo", "src\Trafego.Sumo\Trafego.Sumo.csproj", "{92F67FB3-F857-42A1-9887-A374D89B8348}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{96778172-D82A-4568-A4E2-556F043EBC13}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{96778172-D82A-4568-A4E2-556F043EBC13}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{96778172-D82A-4568-A4E2-556F043EBC13}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{96778172-D82A-4568-A4E2-556F043EBC13}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FA5D455F-7FF0-45CF-BC69-34BBA86480AD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FA5D455F-7FF0-45CF-BC69-34BBA86480AD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FA5D455F-7FF0-45CF-BC69-34BBA86480AD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FA5D455F-7FF0-45CF-BC69-34BBA86480AD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EE39063C-551E-4C55-B94C-1A2B1389077B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EE39063C-551E-4C55-B94C-1A2B1389077B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EE39063C-551E-4C55-B94C-1A2B1389077B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EE39063C-551E-4C55-B94C-1A2B1389077B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{92F67FB3-F857-42A1-9887-A374D89B8348}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{92F67FB3-F857-42A1-9887-A374D89B8348}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{92F67FB3-F857-42A1-9887-A374D89B8348}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{92F67FB3-F857-42A1-9887-A374D89B8348}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{96778172-D82A-4568-A4E2-556F043EBC13} = {97D3D547-7A41-4459-8B47-8545F6949298}
+		{FA5D455F-7FF0-45CF-BC69-34BBA86480AD} = {F9D2C8F5-3EFF-4D8D-85DA-E439E87D45F2}
+		{EE39063C-551E-4C55-B94C-1A2B1389077B} = {97D3D547-7A41-4459-8B47-8545F6949298}
+		{92F67FB3-F857-42A1-9887-A374D89B8348} = {97D3D547-7A41-4459-8B47-8545F6949298}
+	EndGlobalSection
+EndGlobal

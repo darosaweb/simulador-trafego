@@ -1,0 +1,266 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ed="using:Trafego.App.Editor"
+        x:Class="Trafego.App.MainWindow"
+        Title="Tráfego" Width="1400" Height="860" MinWidth="900" MinHeight="560"
+        WindowStartupLocation="CenterScreen">
+
+  <Window.Styles>
+    <Style Selector="TextBlock.h">
+      <Setter Property="FontSize" Value="11" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Foreground" Value="#9aa4b2" />
+      <Setter Property="Margin" Value="0,10,0,4" />
+    </Style>
+    <Style Selector="TextBlock.label">
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="Foreground" Value="#c5ccd6" />
+    </Style>
+    <Style Selector="TextBlock.muted">
+      <Setter Property="Foreground" Value="#9aa4b2" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+    <Style Selector="Grid.form > NumericUpDown, Grid.form > TextBox, Grid.form > CheckBox">
+      <Setter Property="Margin" Value="0,2" />
+      <Setter Property="MinWidth" Value="0" />
+    </Style>
+    <!-- Textos longos nas opções quebram linha em vez de alargar o painel. -->
+    <Style Selector="RadioButton /template/ ContentPresenter, CheckBox /template/ ContentPresenter">
+      <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+    <Style Selector="ToggleButton.tool">
+      <Setter Property="Padding" Value="10,4" />
+    </Style>
+  </Window.Styles>
+
+  <DockPanel>
+    <Menu DockPanel.Dock="Top">
+      <MenuItem Header="_Arquivo">
+        <MenuItem Header="_Novo" InputGesture="Ctrl+N" Click="OnNew" />
+        <MenuItem Header="_Abrir projeto…" InputGesture="Ctrl+O" Click="OnOpen" />
+        <MenuItem Header="_Salvar" InputGesture="Ctrl+S" Click="OnSave" />
+        <MenuItem Header="Salvar _como…" InputGesture="Ctrl+Shift+S" Click="OnSaveAs" />
+        <Separator />
+        <MenuItem Header="Abrir _foto aérea…" Click="OnOpenImage" />
+        <Separator />
+        <MenuItem Header="Sai_r" Click="OnExit" />
+      </MenuItem>
+      <MenuItem Header="_Editar">
+        <MenuItem x:Name="UndoItem" Header="_Desfazer" InputGesture="Ctrl+Z" Click="OnUndo" />
+        <MenuItem x:Name="RedoItem" Header="_Refazer" InputGesture="Ctrl+Y" Click="OnRedo" />
+        <Separator />
+        <MenuItem Header="_Excluir seleção" InputGesture="Delete" Click="OnDelete" />
+      </MenuItem>
+      <MenuItem Header="_Rede">
+        <MenuItem Header="_Semáforos…" Click="OnOpenSignals" />
+        <MenuItem Header="_Demanda (volumes, matriz O/D, rotas)…" Click="OnOpenDemand" />
+        <Separator />
+        <MenuItem Header="_Resultados e comparação…" Click="OnOpenResults" />
+      </MenuItem>
+      <MenuItem Header="E_xibir">
+        <MenuItem Header="_Ajustar à tela" InputGesture="F" Click="OnFit" />
+      </MenuItem>
+    </Menu>
+
+    <Border DockPanel.Dock="Top" Background="#1d2127" BorderBrush="#2d333b" BorderThickness="0,0,0,1" Padding="8,6">
+      <WrapPanel Orientation="Horizontal" ItemSpacing="6" LineSpacing="6">
+        <ToggleButton x:Name="ToolSelect" Classes="tool" Content="Selecionar (V)" Click="OnToolClick" />
+        <ToggleButton x:Name="ToolLink" Classes="tool" Content="Link (L)" Click="OnToolClick" />
+        <ToggleButton x:Name="ToolConnector" Classes="tool" Content="Conector (C)" Click="OnToolClick" />
+        <ToggleButton x:Name="ToolInput" Classes="tool" Content="Entrada (E)" Click="OnToolClick" />
+        <ToggleButton x:Name="ToolMeasure" Classes="tool" Content="Medição (M)" Click="OnToolClick" />
+        <ComboBox x:Name="MeasureKindBox" SelectedIndex="0" Width="150" SelectionChanged="OnMeasureKindChanged"
+                  ToolTip.Tip="Tipo de medição que a ferramenta Medição cria">
+          <ComboBoxItem Content="Contagem" />
+          <ComboBoxItem Content="Fila" />
+          <ComboBoxItem Content="Tempo de viagem" />
+        </ComboBox>
+        <ToggleButton x:Name="ToolCalibrate" Classes="tool" Content="Calibrar (K)" Click="OnToolClick" />
+        <Border Width="1" Background="#2d333b" Margin="8,2" />
+        <TextBlock Classes="label" Text="Novo link:" />
+        <NumericUpDown x:Name="NewLanes" Minimum="1" Maximum="8" Increment="1" Value="1" FormatString="0" Width="110" />
+        <TextBlock Classes="label" Text="faixa(s) de" />
+        <NumericUpDown x:Name="NewWidth" Minimum="2" Maximum="6" Increment="0.1" Value="3.5" FormatString="0.00" Width="120" />
+        <TextBlock Classes="label" Text="m" />
+        <Border Width="1" Background="#2d333b" Margin="8,2" />
+        <Button Content="Ajustar à tela (F)" Click="OnFit" />
+        <Border Width="1" Background="#2d333b" Margin="8,2" />
+        <Button x:Name="SimRun" Content="▶ Simular" Click="OnSimRun" Classes="accent" />
+        <Button x:Name="SimStop" Content="■ Parar" Click="OnSimStop" IsEnabled="False" />
+        <ComboBox x:Name="SimSpeed" SelectedIndex="0" Width="90" SelectionChanged="OnSimSpeedChanged">
+          <ComboBoxItem Content="1×" />
+          <ComboBoxItem Content="2×" />
+          <ComboBoxItem Content="5×" />
+          <ComboBoxItem Content="10×" />
+          <ComboBoxItem Content="Máx." />
+        </ComboBox>
+        <TextBlock Classes="label" Text="Início" />
+        <TextBox x:Name="SimStart" Width="70" Text="07:00" LostFocus="OnSimSettingsCommit" KeyDown="OnNameKeyDown"
+                 ToolTip.Tip="Horário do dia em que a simulação começa (vale para a troca de planos dos semáforos)" />
+        <TextBlock Classes="label" Text="Duração" />
+        <NumericUpDown x:Name="SimMinutes" Minimum="1" Maximum="1440" Increment="5" Value="60" FormatString="0" Width="110"
+                       ValueChanged="OnSimMinutesChanged" />
+        <TextBlock Classes="label" Text="min" />
+        <Border Width="1" Background="#2d333b" Margin="8,2" />
+        <Button x:Name="EvalRun" Content="Avaliar" Click="OnEvaluate"
+                ToolTip.Tip="Roda o período várias vezes (sementes diferentes), sem animação, e salva os resultados" />
+        <NumericUpDown x:Name="EvalReplications" Minimum="1" Maximum="50" Increment="1" Value="3" FormatString="0" Width="105"
+                       ValueChanged="OnReplicationsChanged" ToolTip.Tip="Replicações" />
+        <TextBlock Classes="label" Text="replic." />
+        <Button Content="Resultados…" Click="OnOpenResults" />
+      </WrapPanel>
+    </Border>
+
+    <Border x:Name="CalibrationBar" DockPanel.Dock="Top" Background="#3a2a12" Padding="8,6" IsVisible="False">
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <TextBlock Classes="label" Text="Distância real entre os dois pontos marcados:" />
+        <NumericUpDown x:Name="CalibMeters" Minimum="0.1" Maximum="100000" Increment="1" FormatString="0.00" Width="150" />
+        <TextBlock Classes="label" Text="m" />
+        <Button Content="Aplicar calibração" Click="OnApplyCalibration" Classes="accent" />
+        <Button Content="Cancelar" Click="OnCancelCalibration" />
+      </StackPanel>
+    </Border>
+
+    <Border DockPanel.Dock="Bottom" Background="#1d2127" BorderBrush="#2d333b" BorderThickness="0,1,0,0" Padding="10,4">
+      <DockPanel>
+        <TextBlock x:Name="CursorText" DockPanel.Dock="Right" Classes="muted" Margin="16,0,0,0" />
+        <TextBlock x:Name="StatusText" Classes="muted" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" />
+      </DockPanel>
+    </Border>
+
+    <Border DockPanel.Dock="Right" Width="320" Background="#1d2127" BorderBrush="#2d333b" BorderThickness="1,0,0,0">
+      <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="12,4,18,12">
+
+          <StackPanel x:Name="SimPanel" IsVisible="False" Margin="0,0,0,8">
+            <TextBlock Classes="h" Text="SIMULAÇÃO (SUMO)" />
+            <TextBlock x:Name="SimStats" Classes="muted" FontFamily="Consolas,monospace" />
+            <TextBlock x:Name="SimWarnings" Classes="muted" Margin="0,8,0,0" Foreground="#e8b04a" />
+            <Button Content="Abrir pasta do cenário SUMO" Margin="0,8,0,0" Click="OnOpenScenarioFolder"
+                    ToolTip.Tip="Rede, rotas e configuração gerados; abra no netedit ou no sumo-gui para comparar" />
+          </StackPanel>
+
+          <StackPanel x:Name="MeasurePanel" IsVisible="False">
+            <TextBlock x:Name="MeasureTitle" Classes="h" Text="MEDIÇÃO" />
+            <Grid Classes="form" ColumnDefinitions="110,*" RowDefinitions="Auto,Auto">
+              <TextBlock Classes="label" Text="Nome" />
+              <TextBox x:Name="MeasureName" Grid.Column="1" LostFocus="OnMeasureNameCommit" KeyDown="OnNameKeyDown" />
+              <TextBlock x:Name="MeasureLengthLabel" Classes="label" Grid.Row="1" Text="Fila até (m)" />
+              <NumericUpDown x:Name="MeasureLength" Grid.Row="1" Grid.Column="1" Minimum="5" Maximum="2000" Increment="10"
+                             FormatString="0" ValueChanged="OnMeasureLengthChanged" />
+            </Grid>
+            <TextBlock x:Name="MeasureInfo" Classes="muted" Margin="0,8,0,0" />
+            <Button Content="Excluir medição" Margin="0,10,0,0" Click="OnDelete" />
+          </StackPanel>
+
+          <StackPanel x:Name="InputPanel" IsVisible="False">
+            <TextBlock Classes="h" Text="ENTRADA DE VEÍCULOS" />
+            <Grid Classes="form" ColumnDefinitions="110,*" RowDefinitions="Auto,Auto,Auto">
+              <TextBlock Classes="label" Text="Nome" />
+              <TextBox x:Name="InputName" Grid.Column="1" LostFocus="OnInputNameCommit" KeyDown="OnNameKeyDown" />
+              <TextBlock Classes="label" Grid.Row="1" Text="Volume (veíc/h)" />
+              <NumericUpDown x:Name="InputVolume" Grid.Row="1" Grid.Column="1" Minimum="0" Maximum="20000" Increment="50" FormatString="0" ValueChanged="OnInputChanged" />
+              <TextBlock Classes="label" Grid.Row="2" Text="Pesados (%)" />
+              <NumericUpDown x:Name="InputTrucks" Grid.Row="2" Grid.Column="1" Minimum="0" Maximum="100" Increment="1" FormatString="0" ValueChanged="OnInputChanged" />
+            </Grid>
+            <TextBlock x:Name="InputInfo" Classes="muted" Margin="0,8,0,0" />
+            <Button Content="Excluir entrada" Margin="0,10,0,0" Click="OnDelete" />
+          </StackPanel>
+
+          <StackPanel x:Name="ConflictPanel" IsVisible="False">
+            <TextBlock Classes="h" Text="CONFLITO" />
+            <TextBlock x:Name="ConflictInfo" Classes="muted" />
+            <TextBlock Classes="h" Text="QUEM TEM PREFERÊNCIA?" />
+            <StackPanel Spacing="4">
+              <RadioButton x:Name="ConflictAuto" GroupName="conflict" IsCheckedChanged="OnConflictChoice" />
+              <RadioButton x:Name="ConflictA" GroupName="conflict" IsCheckedChanged="OnConflictChoice" />
+              <RadioButton x:Name="ConflictB" GroupName="conflict" IsCheckedChanged="OnConflictChoice" />
+              <RadioButton x:Name="ConflictNone" GroupName="conflict" Content="Sem conflito (níveis diferentes: viaduto, passagem inferior)" IsCheckedChanged="OnConflictChoice" />
+            </StackPanel>
+            <TextBlock Classes="muted" Margin="0,10,0,0"
+                       Text="Verde tem preferência, vermelho espera uma brecha, amarelo o SUMO decide pela hierarquia das vias (links acima de conectores) e pela geometria." />
+            <Button x:Name="ConflictJunctionButton" Content="Ver o nó" Margin="0,10,0,0" Click="OnConflictJunction" />
+          </StackPanel>
+
+          <StackPanel x:Name="JunctionPanel" IsVisible="False">
+            <TextBlock x:Name="JunctionTitle" Classes="h" Text="NÓ" />
+            <TextBlock Classes="label" Text="Controle" Margin="0,0,0,4" />
+            <ComboBox x:Name="JunctionControlBox" HorizontalAlignment="Stretch" SelectionChanged="OnJunctionControlChanged">
+              <ComboBoxItem Content="Via preferencial (regras de conflito)" />
+              <ComboBoxItem Content="Preferência de quem vem pela direita" />
+              <ComboBoxItem Content="Parada obrigatória em todas" />
+            </ComboBox>
+            <TextBlock x:Name="JunctionInfo" Classes="muted" Margin="0,10,0,0" />
+          </StackPanel>
+
+          <StackPanel x:Name="LinkPanel" IsVisible="False">
+            <TextBlock Classes="h" Text="LINK" />
+            <Grid Classes="form" ColumnDefinitions="110,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto">
+              <TextBlock Classes="label" Text="Nome" />
+              <TextBox x:Name="LinkName" Grid.Column="1" LostFocus="OnLinkNameCommit" KeyDown="OnNameKeyDown" />
+              <TextBlock Classes="label" Grid.Row="1" Text="Faixas" />
+              <NumericUpDown x:Name="LinkLanes" Grid.Row="1" Grid.Column="1" Minimum="1" Maximum="8" Increment="1" FormatString="0" ValueChanged="OnLinkLanesChanged" />
+              <TextBlock Classes="label" Grid.Row="2" Text="Largura (m)" />
+              <NumericUpDown x:Name="LinkWidth" Grid.Row="2" Grid.Column="1" Minimum="2" Maximum="6" Increment="0.1" FormatString="0.00" ValueChanged="OnLinkWidthChanged" />
+              <TextBlock Classes="label" Grid.Row="3" Text="Velocidade (km/h)" />
+              <NumericUpDown x:Name="LinkSpeed" Grid.Row="3" Grid.Column="1" Minimum="5" Maximum="150" Increment="5" FormatString="0" ValueChanged="OnLinkSpeedChanged" />
+              <CheckBox x:Name="LinkSmooth" Grid.Row="4" Grid.Column="1" Content="Curva suave" IsCheckedChanged="OnLinkSmoothChanged" />
+            </Grid>
+            <TextBlock x:Name="LinkInfo" Classes="muted" Margin="0,8,0,0" />
+            <Button Content="Excluir link" Margin="0,10,0,0" Click="OnDelete" />
+          </StackPanel>
+
+          <StackPanel x:Name="ConnectorPanel" IsVisible="False">
+            <TextBlock Classes="h" Text="CONECTOR" />
+            <Grid Classes="form" ColumnDefinitions="110,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
+              <TextBlock Classes="label" Text="Nome" />
+              <TextBox x:Name="ConnName" Grid.Column="1" LostFocus="OnConnNameCommit" KeyDown="OnNameKeyDown" />
+              <TextBlock Classes="label" Grid.Row="1" Text="Nº de faixas" />
+              <NumericUpDown x:Name="ConnLanes" Grid.Row="1" Grid.Column="1" Minimum="1" Maximum="8" Increment="1" FormatString="0" ValueChanged="OnConnChanged" />
+              <TextBlock x:Name="ConnFromName" Grid.Row="2" Grid.ColumnSpan="2" Classes="h" />
+              <TextBlock Classes="label" Grid.Row="3" Text="1ª faixa" />
+              <NumericUpDown x:Name="ConnFromLane" Grid.Row="3" Grid.Column="1" Minimum="1" Maximum="8" Increment="1" FormatString="0" ValueChanged="OnConnChanged" />
+              <TextBlock Classes="label" Grid.Row="4" Text="Posição (m)" />
+              <NumericUpDown x:Name="ConnFromS" Grid.Row="4" Grid.Column="1" Minimum="0" Increment="1" FormatString="0.0" ValueChanged="OnConnChanged" />
+              <TextBlock x:Name="ConnToName" Grid.Row="5" Grid.ColumnSpan="2" Classes="h" />
+              <TextBlock Classes="label" Grid.Row="6" Text="1ª faixa" />
+              <NumericUpDown x:Name="ConnToLane" Grid.Row="6" Grid.Column="1" Minimum="1" Maximum="8" Increment="1" FormatString="0" ValueChanged="OnConnChanged" />
+              <TextBlock Classes="label" Grid.Row="7" Text="Posição (m)" />
+              <NumericUpDown x:Name="ConnToS" Grid.Row="7" Grid.Column="1" Minimum="0" Increment="1" FormatString="0.0" ValueChanged="OnConnChanged" />
+            </Grid>
+            <TextBlock x:Name="ConnInfo" Classes="muted" Margin="0,8,0,0" />
+            <TextBlock Classes="h" Text="SEMÁFORO" />
+            <Grid Classes="form" ColumnDefinitions="110,*" RowDefinitions="Auto,Auto">
+              <TextBlock Classes="label" Text="Controlador" />
+              <ComboBox x:Name="ConnSignal" Grid.Column="1" HorizontalAlignment="Stretch" Margin="0,2" SelectionChanged="OnConnSignalChanged" />
+              <TextBlock Classes="label" Grid.Row="1" Text="Grupo" />
+              <ComboBox x:Name="ConnGroup" Grid.Row="1" Grid.Column="1" HorizontalAlignment="Stretch" Margin="0,2" SelectionChanged="OnConnSignalChanged" />
+            </Grid>
+            <Button Content="Editar semáforos…" Margin="0,6,0,0" Click="OnOpenSignals" />
+            <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,10,0,0">
+              <Button Content="Remover curvas" Click="OnConnStraighten" ToolTip.Tip="Apaga os pontos intermediários" />
+              <Button Content="Excluir conector" Click="OnDelete" />
+            </StackPanel>
+          </StackPanel>
+
+          <StackPanel x:Name="NetworkPanel">
+            <TextBlock Classes="h" Text="REDE" />
+            <TextBlock x:Name="NetworkInfo" Classes="muted" />
+            <TextBlock Classes="h" Text="VERIFICAÇÃO" />
+            <TextBlock x:Name="IssuesText" Classes="muted" />
+            <TextBlock Classes="h" Text="COMO USAR" />
+            <TextBlock Classes="muted" xml:space="preserve">• Roda do mouse: zoom. Botão do meio ou Espaço + arrastar: mover a vista.
+• Link: um trecho com N faixas no mesmo sentido. Desenhe no sentido do tráfego.
+• Conector: liga faixas de um link às de outro (conversões, alças, rotatórias).
+• Entrada: onde os veículos entram, com o volume por hora. Em cada escolha (seguir ou pegar um conector) as opções têm a mesma chance.
+• Selecionado: arraste os pontos; duplo clique insere ponto; botão direito apaga.
+• Esc cancela, Delete exclui, Ctrl+Z desfaz.</TextBlock>
+          </StackPanel>
+
+        </StackPanel>
+      </ScrollViewer>
+    </Border>
+
+    <ed:NetworkCanvas x:Name="MapCanvas" />
+  </DockPanel>
+</Window>

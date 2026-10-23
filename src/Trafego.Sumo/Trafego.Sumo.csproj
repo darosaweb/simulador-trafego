@@ -1,0 +1,31 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <!-- Código gerado pelo SWIG nos bindings do libsumo. -->
+    <NoWarn>$(NoWarn);CS8981</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Trafego.Core\Trafego.Core.csproj" />
+  </ItemGroup>
+
+  <!--
+    Os bindings C# do libsumo vêm com o SUMO instalado e são compilados junto, para ficarem
+    sempre na mesma versão da DLL nativa (libsumocs.dll em SUMO_HOME\bin).
+    Sem SUMO_HOME, o projeto compila sem eles e a simulação avisa que o SUMO não foi encontrado.
+  -->
+  <PropertyGroup>
+    <SumoHomeDir Condition="'$(SUMO_HOME)' != ''">$([MSBuild]::EnsureTrailingSlash($(SUMO_HOME)))</SumoHomeDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(SumoHomeDir)' != '' And Exists('$(SumoHomeDir)include\Eclipse.Sumo.Libsumo\Simulation.cs')">
+    <DefineConstants>$(DefineConstants);LIBSUMO</DefineConstants>
+    <LibsumoSources>$(SumoHomeDir)include\Eclipse.Sumo.Libsumo\*.cs</LibsumoSources>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(LibsumoSources)' != ''">
+    <Compile Include="$(LibsumoSources)" Link="Libsumo\%(Filename)%(Extension)" />
+  </ItemGroup>
+
+</Project>
