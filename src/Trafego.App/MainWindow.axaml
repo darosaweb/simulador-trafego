@@ -207,6 +207,16 @@
               <CheckBox x:Name="LinkSmooth" Grid.Row="4" Grid.Column="1" Content="Curva suave" IsCheckedChanged="OnLinkSmoothChanged" />
             </Grid>
             <TextBlock x:Name="LinkInfo" Classes="muted" Margin="0,8,0,0" />
+            <Button Content="Dividir link…" Margin="0,10,0,0" Click="OnSplitLink"
+                    ToolTip.Tip="Clique depois no ponto do link onde ele deve ser dividido em dois" />
+            <TextBlock Classes="h" Text="MÃO DUPLA" />
+            <Grid Classes="form" ColumnDefinitions="110,*">
+              <TextBlock Classes="label" Text="Canteiro (m)" />
+              <NumericUpDown x:Name="OppositeGap" Grid.Column="1" Minimum="0" Maximum="100" Increment="0.5" Value="0"
+                             FormatString="0.0" ToolTip.Tip="Distância entre as bordas dos dois sentidos (0 = encostados)" />
+            </Grid>
+            <Button Content="Criar sentido oposto" Margin="0,6,0,0" Click="OnCreateOpposite"
+                    ToolTip.Tip="Cria o link do outro sentido, com a mesma forma, encostado do lado esquerdo deste" />
             <Button Content="Excluir link" Margin="0,10,0,0" Click="OnDelete" />
           </StackPanel>
 

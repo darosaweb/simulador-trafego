@@ -34,6 +34,8 @@ public sealed class NetworkCanvas : Control
     private (int LinkId, int Lane, double S)? _connectorFrom;
     // Ferramenta Medição (tempo de viagem): início escolhido no primeiro clique.
     private (int LinkId, double S)? _travelFrom;
+    // Dividir link: o próximo clique sobre este link divide ali.
+    private int? _splitLinkId;
     // Ferramenta Calibrar: pontos clicados, em pixels da imagem.
     private Vec2? _calibA;
     private Vec2? _calibB;
@@ -180,7 +182,8 @@ public sealed class NetworkCanvas : Control
     /// <summary>Esc: abandona o que está em construção na ferramenta atual.</summary>
     public bool CancelToolState()
     {
-        var had = _draft.Count > 0 || _connectorFrom is not null || _calibA is not null || _travelFrom is not null;
+        var had = _draft.Count > 0 || _connectorFrom is not null || _calibA is not null || _travelFrom is not null || _splitLinkId is not null;
+        _splitLinkId = null;
         _travelFrom = null;
         _draft.Clear();
         _connectorFrom = null;
@@ -226,6 +229,14 @@ public sealed class NetworkCanvas : Control
             return;
         }
         if (_editor.ReadOnly) return;
+
+        if (_splitLinkId is { } splitId)
+        {
+            if (kind == PointerUpdateKind.LeftButtonPressed) SplitClick(world, splitId);
+            else if (kind == PointerUpdateKind.RightButtonPressed) CancelToolState();
+            InvalidateVisual();
+            return;
+        }
 
         switch (_editor.Tool)
         {
@@ -288,7 +299,7 @@ public sealed class NetworkCanvas : Control
         }
 
         _hover = _editor.Tool == Tool.Connector ? HitTest.Link(Net, world, Px(HitTolerance)) : null;
-        if (_editor.Tool != Tool.Select || _draft.Count > 0) InvalidateVisual();
+        if (_editor.Tool != Tool.Select || _draft.Count > 0 || _splitLinkId is not null) InvalidateVisual();
     }
 
     protected override void OnPointerReleased(PointerReleasedEventArgs e)
@@ -595,6 +606,53 @@ public sealed class NetworkCanvas : Control
         Status?.Invoke($"{c.Name}: {fromLink.Name} faixa {from.Lane + 1} → {hit.Link.Name} faixa {hit.Lane + 1}.");
     }
 
+    /// <summary>Entra no modo "dividir": o próximo clique sobre o link escolhe onde cortar (Esc cancela).</summary>
+    public void BeginSplit(int linkId)
+    {
+        CancelToolState();
+        _splitLinkId = linkId;
+        Status?.Invoke("Dividir link: clique no ponto do link onde ele deve ser dividido (Esc cancela).");
+        InvalidateVisual();
+    }
+
+    /// <summary>Posição no link em divisão sob o ponto, se o ponto estiver sobre ele.</summary>
+    private Projection? SplitProjection(Vec2 world)
+    {
+        if (_splitLinkId is not { } id || Net.FindLink(id) is not { Points.Count: >= 2 } link) return null;
+        return link.Axis().Project(world) is { } p && p.Distance <= link.TotalWidth / 2 + Px(HitTolerance) ? p : null;
+    }
+
+    private void SplitClick(Vec2 world, int linkId)
+    {
+        if (Net.FindLink(linkId) is not { } link || SplitProjection(world) is not { } proj)
+        {
+            Status?.Invoke("Clique sobre o link que está sendo dividido (Esc cancela).");
+            return;
+        }
+        try
+        {
+            var (a, b, _) = Net.SplitLink(link, proj.S);
+            _splitLinkId = null;
+            _editor.Select(b);
+            _editor.Checkpoint();
+            Status?.Invoke($"{a.Name} dividido: {a.Name} ({a.Axis().Length:0.0} m) e {b.Name} ({b.Axis().Length:0.0} m), ligados por um conector.");
+        }
+        catch (ArgumentException ex)
+        {
+            Status?.Invoke(ex.Message);
+        }
+    }
+
+    /// <summary>No modo "dividir", uma linha laranja atravessando o link mostra onde ele será cortado.</summary>
+    private void DrawSplitPreview(DrawingContext ctx)
+    {
+        if (_splitLinkId is not { } id || Net.FindLink(id) is not { } link) return;
+        if (SplitProjection(ToWorld(_mouse)) is not { } proj) return;
+        var at = link.Axis().At(proj.S);
+        var n = at.Tangent.LeftNormal() * (link.TotalWidth / 2 + 1);
+        ctx.DrawLine(new Pen(Orange, 3, new DashStyle([4, 3], 0)), ToScreen(at.Point + n), ToScreen(at.Point - n));
+    }
+
     private void MeasureClick(Vec2 world)
     {
         if (HitTest.Link(Net, world, Px(HitTolerance)) is not { } hit)
@@ -719,6 +777,7 @@ public sealed class NetworkCanvas : Control
         DrawConflictMarkers(ctx);
         DrawMeasurements(ctx);
         DrawSplitLabels(ctx);
+        DrawSplitPreview(ctx);
         DrawInputs(ctx);
         DrawHandles(ctx);
         DrawConnectorPreview(ctx);

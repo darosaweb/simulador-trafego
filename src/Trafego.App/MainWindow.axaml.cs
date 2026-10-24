@@ -380,6 +380,22 @@ public partial class MainWindow : Window
         _editor.Checkpoint();
     }
 
+    private void OnSplitLink(object? sender, RoutedEventArgs e)
+    {
+        if (_editor.ReadOnly || _editor.SelectedLink is not { } link) return;
+        MapCanvas.BeginSplit(link.Id);
+        MapCanvas.Focus();
+    }
+
+    private void OnCreateOpposite(object? sender, RoutedEventArgs e)
+    {
+        if (_editor.ReadOnly || _editor.SelectedLink is not { } link) return;
+        var opposite = _editor.Network.AddOppositeLink(link, (double)(OppositeGap.Value ?? 0));
+        _editor.Select(opposite);
+        _editor.Checkpoint();
+        SetStatus($"{opposite.Name} criado. Ajuste os pontos se a via real não for paralela, e ligue-o com conectores.");
+    }
+
     private void OnLinkSmoothChanged(object? sender, RoutedEventArgs e)
     {
         if (_refreshing || _editor.SelectedLink is not { } link) return;

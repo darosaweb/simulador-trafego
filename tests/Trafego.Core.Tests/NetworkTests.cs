@@ -186,6 +186,46 @@ public class NetworkTests
     }
 
     [Fact]
+    public void Sentido_oposto_fica_encostado_a_esquerda_e_anda_ao_contrario()
+    {
+        var net = new Network();
+        var east = net.AddLink([new(0, 0), new(100, 0)], laneCount: 2); // 7 m de largura, para leste
+        east.SpeedKmh = 80;
+        east.Lanes[1].Width = 3.2;
+        var west = net.AddOppositeLink(east);
+
+        // Andando para leste, a esquerda é o norte (Y negativo): o eixo oposto fica a 6,7 m (meia largura de cada).
+        Assert.Equal(new Vec2(100, -6.7), west.Points[0]);
+        Assert.Equal(new Vec2(0, -6.7), west.Points[^1]);
+        Assert.Equal(new Vec2(-1, 0), west.Axis().At(0).Tangent); // para oeste
+        Assert.Equal([3.5, 3.2], west.Lanes.Select(l => l.Width));
+        Assert.Equal(80, west.SpeedKmh);
+        Assert.Equal($"{east.Name} (oposto)", west.Name);
+
+        // As bordas se encostam: a borda esquerda de um é a borda esquerda do outro.
+        Assert.Equal(west.Points[0].Y + west.TotalWidth / 2, east.Points[0].Y - east.TotalWidth / 2, 9);
+
+        // Com canteiro central de 4 m, afasta mais 4 m; e não há conflito entre os dois sentidos.
+        var withMedian = net.AddOppositeLink(east, gap: 4);
+        Assert.Equal(-10.7, withMedian.Points[0].Y, 9);
+        Assert.DoesNotContain(ConflictAnalysis.Of(net).Conflicts, c => c.Kind == ConflictKind.LinkCrossing);
+    }
+
+    [Fact]
+    public void Sentido_oposto_de_curva_tem_a_mesma_forma_por_fora()
+    {
+        var net = new Network();
+        var curve = net.AddLink([new(0, 0), new(50, 0), new(50, 50)]); // vira à direita (sul)
+        curve.Smooth = true;
+        var back = net.AddOppositeLink(curve);
+        Assert.True(back.Smooth);
+        Assert.Equal(3, back.Points.Count);
+        // A curva oposta fica por fora (do lado esquerdo da original), então é um pouco mais longa.
+        Assert.True(back.Axis().Length > curve.Axis().Length);
+        Assert.Equal(new Vec2(50 + 3.5, 50), back.Points[0]); // começa onde a original termina, deslocada
+    }
+
+    [Fact]
     public void Formato_mais_novo_que_o_suportado_e_rejeitado()
     {
         Assert.Throws<InvalidDataException>(() => ProjectFile.FromJson("""{"format": 99}"""));

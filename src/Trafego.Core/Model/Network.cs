@@ -88,6 +88,137 @@ public sealed class Network
         return link;
     }
 
+    /// <summary>
+    /// Cria o sentido oposto de um link, como o "Generate opposite direction" do Vissim: mesma forma,
+    /// percorrida ao contrário, encostada do lado esquerdo de quem dirige no link original (trânsito pela
+    /// direita, como no Brasil). Mesmas faixas, velocidade e suavização.
+    /// </summary>
+    /// <param name="gap">Afastamento entre as bordas dos dois sentidos (canteiro central), m.</param>
+    public Link AddOppositeLink(Link link, double gap = 0)
+    {
+        var distance = link.TotalWidth / 2 + Math.Max(0, gap) + link.TotalWidth / 2;
+        var points = Polyline.Offset(link.Points, distance);
+        points.Reverse();
+        var id = NewId();
+        var opposite = new Link
+        {
+            Id = id,
+            Name = $"{link.Name} (oposto)",
+            Points = points,
+            Smooth = link.Smooth,
+            SpeedKmh = link.SpeedKmh,
+            Lanes = [.. link.Lanes.Select(l => new Lane { Width = l.Width })],
+        };
+        Links.Add(opposite);
+        return opposite;
+    }
+
+    /// <summary>Espaço entre as duas partes de um link dividido, ocupado pelo conector que as liga, m.</summary>
+    public const double SplitGap = 2;
+
+    /// <summary>
+    /// Divide o link em dois na posição s, como o "Split link" do Vissim. O link original vira a parte A
+    /// (até s) e mantém o id; a parte B (depois de s) é um link novo; um conector curto com todas as faixas
+    /// liga A a B. Conectores e medições depois do ponto passam para B; a entrada fica em A; a matriz O/D e
+    /// as rotas escolhidas que passam pelo ponto são atualizadas para continuar valendo.
+    /// </summary>
+    public (Link A, Link B, Connector Join) SplitLink(Link link, double s)
+    {
+        var axis = link.Axis();
+        var len = axis.Length;
+        var half = SplitGap / 2;
+        if (s < half + Topology.MergeDistance || s > len - half - Topology.MergeDistance)
+            throw new ArgumentException($"Ponto muito perto da ponta de {link.Name}: divida a pelo menos {SplitGap} m das pontas.");
+
+        // Antes de mexer: quais rotas escolhidas passam pelo ponto (vão ganhar o conector novo).
+        var routeFixes = RouteChoicesThrough(link.Id, s);
+
+        var (sA, sB) = (s - half, s + half);
+        var pA = axis.At(sA).Point;
+        var pB = axis.At(sB).Point;
+        List<Vec2> pointsA, pointsB;
+        if (link.Smooth)
+        {
+            // Curva suave: corta o polígono de controle, mantendo os pontos de cada lado.
+            var control = new Polyline(link.Points);
+            var iA = control.Project(pA)!.Value.Segment;
+            var iB = control.Project(pB)!.Value.Segment;
+            pointsA = [.. link.Points.Take(iA + 1), pA];
+            pointsB = [pB, .. link.Points.Skip(iB + 1)];
+        }
+        else
+        {
+            pointsA = axis.Slice(0, sA);
+            pointsB = axis.Slice(sB, len);
+        }
+
+        var id = NewId();
+        var b = new Link
+        {
+            Id = id,
+            Name = $"{link.Name} (2)",
+            Points = pointsB,
+            Smooth = link.Smooth,
+            SpeedKmh = link.SpeedKmh,
+            Lanes = [.. link.Lanes.Select(l => new Lane { Width = l.Width })],
+        };
+        link.Points = pointsA;
+        Links.Add(b);
+
+        // O que fica depois do ponto passa para B, com a posição medida a partir do começo de B.
+        foreach (var c in Connectors)
+        {
+            if (c.FromLinkId == link.Id && c.FromS > s) { c.FromLinkId = b.Id; c.FromS -= sB; }
+            if (c.ToLinkId == link.Id && c.ToS >= s) { c.ToLinkId = b.Id; c.ToS -= sB; }
+        }
+        foreach (var m in Measurements)
+        {
+            if (m.LinkId == link.Id && m.S > s) { m.LinkId = b.Id; m.S -= sB; }
+            if (m.ToLinkId == link.Id && m.ToS > s) { m.ToLinkId = b.Id; m.ToS -= sB; }
+        }
+
+        var join = AddConnector(link, 0, link.Axis().Length, b, 0, 0, link.Lanes.Count);
+
+        // A saída da rede que era o fim do link agora é o fim de B.
+        foreach (var e in Demand.Matrix.Where(e => e.DestinationLinkId == link.Id)) e.DestinationLinkId = b.Id;
+        foreach (var r in Demand.RouteChoices.Where(r => r.DestinationLinkId == link.Id)) r.DestinationLinkId = b.Id;
+        foreach (var (choice, index) in routeFixes) choice.ConnectorIds.Insert(index, join.Id);
+
+        FitConnectorsTo(link);
+        FitConnectorsTo(b);
+        return (link, b, join);
+    }
+
+    /// <summary>
+    /// Rotas escolhidas (matriz O/D) que atravessam a posição s do link, e onde o conector da divisão
+    /// entra na lista de conectores de cada uma.
+    /// </summary>
+    private List<(RouteChoice Choice, int Index)> RouteChoicesThrough(int linkId, double s)
+    {
+        var result = new List<(RouteChoice, int)>();
+        if (Demand.RouteChoices.Count == 0) return result;
+        var analysis = ConflictAnalysis.Of(this);
+        var cuts = analysis.Topology.Has(linkId) ? analysis.Topology.Cuts(linkId) : [];
+        foreach (var choice in Demand.RouteChoices)
+        {
+            if (FindInput(choice.OriginId) is not { } input) continue;
+            var path = RouteFinder.PathsFrom(analysis, input.LinkId)
+                .FirstOrDefault(p => p.EndLinkId == choice.DestinationLinkId && p.ConnectorIds.SequenceEqual(choice.ConnectorIds));
+            if (path is null) continue;
+            var connectorsBefore = 0;
+            foreach (var step in path.Steps)
+            {
+                if (step is ConnectorStep) connectorsBefore++;
+                else if (step is LinkStep ls && ls.LinkId == linkId && cuts[ls.Piece] < s && s < cuts[ls.Piece + 1])
+                {
+                    result.Add((choice, connectorsBefore));
+                    break;
+                }
+            }
+        }
+        return result;
+    }
+
     public Connector AddConnector(Link from, int fromLane, double fromS, Link to, int toLane, double toS, int laneCount = 1)
     {
         var id = NewId();

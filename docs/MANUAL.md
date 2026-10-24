@@ -144,6 +144,20 @@ Dá para trabalhar sem foto: os links ficam sobre um fundo escuro, em metros.
 Um **link** é um trecho de via com uma ou mais faixas **no mesmo sentido**. Uma avenida de mão dupla são
 dois links, um para cada sentido.
 
+**Dividir um link em dois**: selecione o link, clique em **Dividir link…** no painel e depois no ponto do
+link onde ele deve ser cortado (uma linha laranja mostra o ponto; Esc cancela). O link vira duas partes ligadas
+por um conector curto com todas as faixas, e o tráfego segue como antes. Conectores e medições depois do ponto
+passam para a segunda parte; a entrada fica na primeira; a matriz O/D e as rotas escolhidas são atualizadas.
+Serve para mudar faixas ou velocidade só num trecho, ou para fazer um conector sair do meio do que era um link só.
+Não dá para dividir a menos de 2 m das pontas.
+
+**Mão dupla**: desenhe um sentido, selecione o link e clique em **Criar sentido oposto** (painel da direita).
+O programa cria o outro sentido com a mesma forma, percorrida ao contrário, encostado do lado esquerdo
+(trânsito pela direita), com as mesmas faixas e velocidade. Em **Canteiro (m)**, informe a distância entre as
+bordas dos dois sentidos se houver canteiro central. Depois, ajuste os pontos onde a via real não for
+paralela e mude faixas ou velocidade do outro sentido se forem diferentes. Os dois sentidos não formam conflito
+entre si; nos cruzamentos, as conversões à esquerda cruzam o sentido oposto e o nó se forma sozinho.
+
 **Desenhar**
 
 - Ferramenta **L**. Clique para marcar o eixo da via, **no sentido do tráfego**. As setas mostram o sentido.
