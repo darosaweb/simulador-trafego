@@ -42,6 +42,7 @@
         <MenuItem Header="Salvar _como…" InputGesture="Ctrl+Shift+S" Click="OnSaveAs" />
         <Separator />
         <MenuItem Header="Abrir _foto aérea…" Click="OnOpenImage" />
+        <MenuItem Header="Exportar _vídeo da simulação…" Click="OnExportVideo" />
         <Separator />
         <MenuItem Header="Sai_r" Click="OnExit" />
       </MenuItem>
@@ -108,6 +109,7 @@
                        ValueChanged="OnReplicationsChanged" ToolTip.Tip="Replicações" />
         <TextBlock Classes="label" Text="replic." />
         <Button Content="Resultados…" Click="OnOpenResults" />
+        <Button Content="Vídeo…" Click="OnExportVideo" ToolTip.Tip="Exporta um vídeo MP4 da simulação, enquadrando o que está na tela" />
       </WrapPanel>
     </Border>
 

@@ -601,6 +601,34 @@ public partial class MainWindow : Window
         }
     }
 
+    /// <summary>Exportar vídeo: precisa da simulação parada (o libsumo só aceita uma simulação por vez).</summary>
+    private async void OnExportVideo(object? sender, RoutedEventArgs e)
+    {
+        if (_sim.Active)
+        {
+            SetStatus("Pare a simulação (■ Parar) antes de exportar o vídeo.");
+            return;
+        }
+        if (!LibsumoSession.Available)
+        {
+            SetStatus("SUMO não encontrado: instale o Eclipse SUMO e defina SUMO_HOME.");
+            return;
+        }
+        var window = new VideoWindow(MapCanvas, _editor.Project, Path.Combine(ScenarioDirectory(), "video"),
+            $"{ProjectName} {DateTime.Now:yyyy-MM-dd HHmm}");
+        _editor.SetReadOnly(true); // a rede não muda enquanto o vídeo é gerado
+        EvalRun.IsEnabled = SimRun.IsEnabled = false;
+        try
+        {
+            await window.ShowDialog(this);
+        }
+        finally
+        {
+            _editor.SetReadOnly(false);
+            EvalRun.IsEnabled = SimRun.IsEnabled = true;
+        }
+    }
+
     private ResultsWindow? _resultsWindow;
 
     private void OnOpenResults(object? sender, RoutedEventArgs e) => OpenResults(null);

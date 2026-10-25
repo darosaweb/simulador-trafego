@@ -747,9 +747,40 @@ public sealed class NetworkCanvas : Control
     private static readonly IBrush HandleFill = Brushes.White;
     private static readonly IBrush LabelBack = new SolidColorBrush(Color.FromArgb(200, 21, 24, 29));
 
-    public override void Render(DrawingContext ctx)
+    public override void Render(DrawingContext ctx) => RenderScene(ctx, Bounds.Size);
+
+    /// <summary>Tamanho da área desenhada agora (a tela, ou o quadro do vídeo).</summary>
+    private Size _sceneSize;
+    /// <summary>Desenhando um quadro de vídeo: só a foto, a rede, os veículos e os semáforos, sem nada de edição.</summary>
+    private bool _video;
+
+    /// <summary>
+    /// Desenha um quadro de vídeo com a vista (zoom e deslocamento) e o estado da simulação dados, sem
+    /// alterar o que está na tela. Por cima, o relógio e um resumo da simulação.
+    /// </summary>
+    public void RenderVideoFrame(DrawingContext ctx, Size size, double zoom, Vec2 pan, SimSnapshot snapshot, string caption)
     {
-        ctx.FillRectangle(Backdrop, new Rect(Bounds.Size));
+        var saved = (_zoom, _pan, _snapshot);
+        (_zoom, _pan, _snapshot, _video) = (zoom, pan, snapshot, true);
+        try
+        {
+            RenderScene(ctx, size);
+            DrawVideoCaption(ctx, snapshot, caption);
+        }
+        finally
+        {
+            (_zoom, _pan, _snapshot) = saved;
+            _video = false;
+        }
+    }
+
+    /// <summary>Vista atual (para o vídeo enquadrar o mesmo que está na tela).</summary>
+    public (double Zoom, Vec2 Pan, Size Size) CurrentView => (_zoom, _pan, Bounds.Size);
+
+    private void RenderScene(DrawingContext ctx, Size sceneSize)
+    {
+        _sceneSize = sceneSize;
+        ctx.FillRectangle(Backdrop, new Rect(sceneSize));
 
         using (ctx.PushTransform(Matrix.CreateScale(_zoom, _zoom) * Matrix.CreateTranslation(_pan.X, _pan.Y)))
         {
@@ -762,27 +793,48 @@ public sealed class NetworkCanvas : Control
             foreach (var link in Net.Links) DrawLink(ctx, link);
             foreach (var c in Net.Connectors) DrawConnector(ctx, c);
 
-            if (_hover is { } h) DrawLaneHighlight(ctx, h.Link, h.Lane);
-            if (_connectorFrom is { } from && Net.FindLink(from.LinkId) is { } fl) DrawLaneHighlight(ctx, fl, from.Lane);
-            DrawDraft(ctx);
-            DrawConflictAreas(ctx);
-            DrawHighlight(ctx);
+            if (!_video)
+            {
+                if (_hover is { } h) DrawLaneHighlight(ctx, h.Link, h.Lane);
+                if (_connectorFrom is { } from && Net.FindLink(from.LinkId) is { } fl) DrawLaneHighlight(ctx, fl, from.Lane);
+                DrawDraft(ctx);
+                DrawConflictAreas(ctx);
+                DrawHighlight(ctx);
+            }
             DrawVehicles(ctx);
             DrawSignalHeads(ctx);
         }
 
-        DrawExits(ctx);
-
-        DrawJunctions(ctx);
-        DrawConflictMarkers(ctx);
-        DrawMeasurements(ctx);
-        DrawSplitLabels(ctx);
-        DrawSplitPreview(ctx);
-        DrawInputs(ctx);
-        DrawHandles(ctx);
-        DrawConnectorPreview(ctx);
-        DrawCalibration(ctx);
+        if (!_video)
+        {
+            DrawExits(ctx);
+            DrawJunctions(ctx);
+            DrawConflictMarkers(ctx);
+            DrawMeasurements(ctx);
+            DrawSplitLabels(ctx);
+            DrawSplitPreview(ctx);
+            DrawInputs(ctx);
+            DrawHandles(ctx);
+            DrawConnectorPreview(ctx);
+            DrawCalibration(ctx);
+        }
         DrawScaleBar(ctx);
+    }
+
+    /// <summary>Legenda do vídeo no canto superior esquerdo: relógio grande e um resumo da simulação.</summary>
+    private static void DrawVideoCaption(DrawingContext ctx, SimSnapshot s, string caption)
+    {
+        var clock = new FormattedText(SimulationSettings.Clock(s.Time), CultureInfo.CurrentCulture, FlowDirection.LeftToRight,
+            new Typeface(Typeface.Default.FontFamily, FontStyle.Normal, FontWeight.SemiBold), 28, Brushes.White);
+        var info = new FormattedText(
+            $"{s.Vehicles.Count} veículos na rede · {s.Stopped} parados · velocidade média {s.MeanSpeed * 3.6:0} km/h" +
+            (caption.Length > 0 ? $"\n{caption}" : ""),
+            CultureInfo.CurrentCulture, FlowDirection.LeftToRight, Typeface.Default, 14, Brushes.White);
+        var w = Math.Max(clock.Width, info.Width) + 24;
+        var h = clock.Height + info.Height + 20;
+        ctx.FillRectangle(LabelBack, new Rect(12, 12, w, h), 6);
+        ctx.DrawText(clock, new Point(24, 18));
+        ctx.DrawText(info, new Point(24, 22 + clock.Height));
     }
 
     private static StreamGeometry Shape(IReadOnlyList<Vec2> pts, bool closed)
@@ -810,7 +862,7 @@ public sealed class NetworkCanvas : Control
         if (link.Points.Count < 2) return;
         var axis = link.Axis().Points;
         var half = link.TotalWidth / 2;
-        var selected = link.Id == _editor.SelectedLinkId;
+        var selected = !_video && link.Id == _editor.SelectedLinkId;
         var fill = _editor.LinkOverlay is { } overlay && overlay.TryGetValue(link.Id, out var ratio) && double.IsFinite(ratio)
             ? SpeedRatioBrush(ratio)
             : LinkFill;
@@ -829,7 +881,7 @@ public sealed class NetworkCanvas : Control
         if (Net.GeometryOf(c) is not { } g) return;
         var axis = g.Axis.Points;
         var half = g.TotalWidth / 2;
-        var selected = c.Id == _editor.SelectedConnectorId;
+        var selected = !_video && c.Id == _editor.SelectedConnectorId;
         ctx.DrawGeometry(ConnectorFill, new Pen(selected ? Accent : EdgeBrush, Px(selected ? 2.5 : 0.8)), Ribbon(axis, -half, half));
 
         var dash = new Pen(EdgeBrush, Px(1), new DashStyle([3, 5], 0));
@@ -1227,7 +1279,7 @@ public sealed class NetworkCanvas : Control
         var pow = Math.Pow(10, Math.Floor(Math.Log10(target)));
         var meters = new[] { 1, 2, 5, 10 }.Select(k => k * pow).Last(m => m <= target);
         var w = meters * _zoom;
-        var y = Bounds.Height - 18;
+        var y = _sceneSize.Height - 18;
         var pen = new Pen(Brushes.White, 2);
         ctx.DrawLine(pen, new Point(14, y), new Point(14 + w, y));
         ctx.DrawLine(pen, new Point(14, y - 5), new Point(14, y + 1));

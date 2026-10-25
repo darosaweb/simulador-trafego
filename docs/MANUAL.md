@@ -35,6 +35,7 @@ usando o **SUMO** como motor. No fim, mede e compara cenários — por exemplo, 
 - **.NET 8 SDK** (ou mais novo).
 - **Eclipse SUMO**, com a variável de ambiente `SUMO_HOME` apontando para a pasta de instalação
   (o instalador do SUMO para Windows já faz isso). Sem o SUMO, o editor abre, mas não simula.
+- **FFmpeg** (opcional), só para exportar vídeo: `winget install Gyan.FFmpeg`.
 
 **Para abrir o programa**, na pasta do projeto:
 
@@ -318,6 +319,18 @@ O painel mostra o relógio, os veículos na rede, os parados, quantos entraram e
 **Cores dos veículos**: vermelho parado → amarelo → verde a 60 km/h ou mais. Caminhões são um pouco mais escuros.
 
 Ao clicar em **Parar**, os resultados desta simulação são salvos (veja a seção 12).
+
+**Vídeo do teste**: com a simulação parada, clique em **Vídeo…** (barra de ferramentas) ou em
+**Arquivo → Exportar vídeo da simulação…**. O programa roda o teste de novo (mesma semente, mesmo resultado),
+sem tempo real, e grava um **MP4** com a área que está **na tela** — ajuste o zoom antes. Escolha:
+
+- **Começar aos** e **Duração**: o trecho da simulação (em minutos);
+- **Velocidade**: quantas vezes mais rápido que o real (10× = 10 minutos de simulação em 1 minuto de vídeo);
+- **Resolução**: 1920 × 1080, 1280 × 720 ou o tamanho da tela.
+
+O vídeo mostra a foto, a rede, os veículos e os semáforos (sem os elementos de edição), com o relógio e um resumo
+da simulação no canto. No fim, **Abrir vídeo** ou **Abrir pasta**. Precisa do **FFmpeg** instalado
+(`winget install Gyan.FFmpeg`).
 
 O botão **Abrir pasta do cenário SUMO** mostra os arquivos gerados para o SUMO. O `cenario.sumocfg` abre no
 **sumo-gui** do próprio SUMO, para conferir ou estudar.
