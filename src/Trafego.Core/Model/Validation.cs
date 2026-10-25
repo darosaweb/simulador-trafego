@@ -45,6 +45,7 @@ public static class Validation
                 Error(c.Id, $"{c.Name}: posição de chegada fora de {to.Name}.");
             if (c.FromLinkId == c.ToLinkId) Warn(c.Id, $"{c.Name}: liga {from.Name} a ele mesmo.");
             if (c.SplitPercent is { } pct && pct is < 0 or > 100) Error(c.Id, $"{c.Name}: o percentual deve ficar entre 0 e 100.");
+            if (c.SplitPercentTruck is { } pt && pt is < 0 or > 100) Error(c.Id, $"{c.Name}: o percentual dos pesados deve ficar entre 0 e 100.");
         }
 
         foreach (var input in net.Inputs)
@@ -82,17 +83,23 @@ public static class Validation
     /// </summary>
     private static void CheckSplits(Network net, Topology topo, Action<int, string> warn)
     {
-        var groups = net.Connectors.Where(topo.Covers).GroupBy(topo.FromNode).Where(g => g.Any(c => c.SplitPercent is not null));
-        foreach (var g in groups)
+        foreach (var cls in new[] { VehicleClass.Car, VehicleClass.Truck })
         {
-            var sum = g.Sum(c => c.SplitPercent ?? 0);
-            var continues = !topo.IsLinkEnd(g.Key);
-            var allSet = !continues && g.All(c => c.SplitPercent is not null);
-            var where = $"{NameOf(net, g.Key.LinkId)} ({string.Join(", ", g.Select(c => c.Name))})";
-            if (sum > 100 + 1e-6)
-                warn(g.First().Id, $"Os percentuais dos conectores que saem de {where} somam {sum:0}%; serão normalizados para 100%.");
-            else if (allSet && Math.Abs(sum - 100) > 1e-6)
-                warn(g.First().Id, $"Os percentuais dos conectores que saem de {where} somam {sum:0}% e não há outra opção; serão normalizados para 100%.");
+            // Os pesados só têm conta própria onde algum conector tem percentual de pesados.
+            var groups = net.Connectors.Where(topo.Covers).GroupBy(topo.FromNode)
+                .Where(g => cls == VehicleClass.Car ? g.Any(c => c.SplitPercent is not null) : g.Any(c => c.SplitPercentTruck is not null));
+            var what = cls == VehicleClass.Truck ? "percentuais dos pesados" : "percentuais";
+            foreach (var g in groups)
+            {
+                var sum = g.Sum(c => c.SplitFor(cls) ?? 0);
+                var continues = !topo.IsLinkEnd(g.Key);
+                var allSet = !continues && g.All(c => c.SplitFor(cls) is not null);
+                var where = $"{NameOf(net, g.Key.LinkId)} ({string.Join(", ", g.Select(c => c.Name))})";
+                if (sum > 100 + 1e-6)
+                    warn(g.First().Id, $"Os {what} dos conectores que saem de {where} somam {sum:0}%; serão normalizados para 100%.");
+                else if (allSet && Math.Abs(sum - 100) > 1e-6)
+                    warn(g.First().Id, $"Os {what} dos conectores que saem de {where} somam {sum:0}% e não há outra opção; serão normalizados para 100%.");
+            }
         }
     }
 

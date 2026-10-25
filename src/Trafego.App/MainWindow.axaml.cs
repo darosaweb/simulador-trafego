@@ -166,14 +166,24 @@ public partial class MainWindow : Window
         // Divisão do tráfego no ponto de onde o conector sai.
         var topo = _editor.Analysis.Topology;
         var split = topo.Covers(c) ? RouteFinder.SplitAt(topo, topo.FromNode(c)) : [];
+        var splitTruck = topo.Covers(c) ? RouteFinder.SplitAt(topo, topo.FromNode(c), VehicleClass.Truck) : [];
         var mine = split.FirstOrDefault(s => s.ConnectorId == c.Id).Share;
+        var mineTruck = splitTruck.FirstOrDefault(s => s.ConnectorId == c.Id).Share;
         ConnSplitOn.IsChecked = c.SplitPercent is not null;
         ConnSplit.IsEnabled = c.SplitPercent is not null;
         ConnSplit.Value = (decimal)Math.Round(c.SplitPercent ?? mine * 100, 1);
+        ConnSplitTruckOn.IsChecked = c.SplitPercentTruck is not null;
+        ConnSplitTruck.IsEnabled = c.SplitPercentTruck is not null;
+        ConnSplitTruck.Value = (decimal)Math.Round(c.SplitPercentTruck ?? mineTruck * 100, 1);
+
+        string Describe(List<(int? ConnectorId, double Share)> s) => string.Join(" · ", s.Select(x =>
+            $"{(x.ConnectorId is { } id ? Validation.NameOf(net, id) : $"seguir em {from?.Name}")} {x.Share:P0}"));
+        var sameForTrucks = split.Select(s => Math.Round(s.Share, 6)).SequenceEqual(splitTruck.Select(s => Math.Round(s.Share, 6)));
         ConnSplitInfo.Text = split.Count < 2
             ? "Só há este caminho saindo deste ponto."
-            : "Neste ponto: " + string.Join(" · ", split.Select(s =>
-                  $"{(s.ConnectorId is { } id ? Validation.NameOf(net, id) : $"seguir em {from?.Name}")} {s.Share:P0}")) +
+            : (sameForTrucks
+                  ? $"Neste ponto: {Describe(split)}"
+                  : $"Neste ponto, leves: {Describe(split)}\nPesados: {Describe(splitTruck)}") +
               (net.Inputs.Any(i => net.Demand.UsesMatrix(i.Id))
                   ? "\nEntradas com matriz O/D não usam esta divisão (seguem as rotas da matriz)."
                   : "");
@@ -430,6 +440,20 @@ public partial class MainWindow : Window
         if (_refreshing || _editor.SelectedConnector is not { } c) return;
         // Ligando, começa com a parte que o conector já recebia; desligando, volta à divisão igual.
         c.SplitPercent = ConnSplitOn.IsChecked == true ? (double)(ConnSplit.Value ?? 50) : null;
+        _editor.Checkpoint();
+    }
+
+    private void OnConnSplitTruckToggled(object? sender, RoutedEventArgs e)
+    {
+        if (_refreshing || _editor.SelectedConnector is not { } c) return;
+        c.SplitPercentTruck = ConnSplitTruckOn.IsChecked == true ? (double)(ConnSplitTruck.Value ?? 50) : null;
+        _editor.Checkpoint();
+    }
+
+    private void OnConnSplitTruckChanged(object? sender, NumericUpDownValueChangedEventArgs e)
+    {
+        if (_refreshing || _editor.SelectedConnector is not { } c || c.SplitPercentTruck is null || e.NewValue is not { } v) return;
+        c.SplitPercentTruck = (double)v;
         _editor.Checkpoint();
     }
 

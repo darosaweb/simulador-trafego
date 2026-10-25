@@ -40,6 +40,15 @@ public sealed class Connector
     /// Vale para entradas sem matriz O/D.
     /// </summary>
     public double? SplitPercent { get; set; }
+
+    /// <summary>
+    /// Percentual só para os veículos pesados (caminhões), quando é diferente do dos leves.
+    /// Null = os pesados seguem <see cref="SplitPercent"/>, como os leves.
+    /// </summary>
+    public double? SplitPercentTruck { get; set; }
+
+    /// <summary>Percentual que vale para a classe de veículo (null = parte igual).</summary>
+    public double? SplitFor(VehicleClass cls) => cls == VehicleClass.Truck ? SplitPercentTruck ?? SplitPercent : SplitPercent;
 }
 
 /// <summary>Geometria calculada de um conector.</summary>

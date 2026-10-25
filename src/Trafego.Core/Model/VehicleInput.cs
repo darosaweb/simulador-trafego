@@ -1,5 +1,8 @@
 namespace Trafego.Core.Model;
 
+/// <summary>Classe de veículo: leves (carros) e pesados (caminhões).</summary>
+public enum VehicleClass { Car, Truck }
+
 /// <summary>
 /// Entrada de veículos no início de um link, como o "vehicle input" do Vissim. É também uma origem
 /// da matriz O/D: se tem algum volume na matriz, os veículos vão para os destinos dela; senão, entram

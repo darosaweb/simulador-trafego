@@ -530,7 +530,8 @@ public sealed class SumoExport
         var windows = demand.Windows(begin, end);
         var flows = new List<(double Begin, XElement Flow)>();
 
-        void AddFlows(VehicleInput input, string id, string route, Func<double, double> vphAt)
+        // routeFor: rota (ou distribuição) de cada tipo de veículo, "car" ou "truck".
+        void AddFlows(VehicleInput input, string id, Func<string, string> routeFor, Func<double, double> vphAt)
         {
             for (var w = 0; w < windows.Count; w++)
             {
@@ -542,7 +543,7 @@ public sealed class SumoExport
                     flows.Add((b, new XElement("flow",
                         new XAttribute("id", $"{id}_w{w}_{type}"),
                         new XAttribute("type", type),
-                        new XAttribute("route", route),
+                        new XAttribute("route", routeFor(type)),
                         new XAttribute("begin", F(b)),
                         new XAttribute("end", F(e)),
                         new XAttribute("period", $"exp({(vph / 3600).ToString("R", CultureInfo.InvariantCulture)})"),
@@ -576,7 +577,15 @@ public sealed class SumoExport
                 if (paths.Count >= MaxPathsPerInput)
                     Warnings.Add($"{input.Name}: caminhos demais; só os {MaxPathsPerInput} primeiros foram usados.");
                 root.Add(Distribution($"rd{input.Id}", paths.Select(p => (EdgesOf(p), p.Probability))));
-                AddFlows(input, $"in{input.Id}", $"rd{input.Id}", input.VolumeAt);
+                // Com percentual próprio para pesados em algum conector, os caminhões ganham a sua distribuição.
+                var truckRoute = $"rd{input.Id}";
+                if (input.TruckShare > 0 && _net.Connectors.Any(c => c.SplitPercentTruck is not null))
+                {
+                    var truckPaths = RouteFinder.PathsFrom(Analysis, input.LinkId, VehicleClass.Truck);
+                    truckRoute = $"rd{input.Id}_truck";
+                    root.Add(Distribution(truckRoute, truckPaths.Select(p => (EdgesOf(p), p.Probability))));
+                }
+                AddFlows(input, $"in{input.Id}", type => type == "truck" ? truckRoute : $"rd{input.Id}", input.VolumeAt);
                 continue;
             }
 
@@ -590,7 +599,7 @@ public sealed class SumoExport
                 }
                 var distId = $"od{input.Id}_{dest}";
                 root.Add(Distribution(distId, routes.Select(r => (EdgesOf(r.Path), r.Weight))));
-                AddFlows(input, $"od{input.Id}_{dest}", distId, slice => demand.OdVolume(input.Id, dest, slice));
+                AddFlows(input, $"od{input.Id}_{dest}", _ => distId, slice => demand.OdVolume(input.Id, dest, slice));
             }
         }
 

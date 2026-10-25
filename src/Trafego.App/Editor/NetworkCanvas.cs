@@ -1146,9 +1146,12 @@ public sealed class NetworkCanvas : Control
     {
         foreach (var c in Net.Connectors)
         {
-            if (c.SplitPercent is not { } pct || Net.GeometryOf(c) is not { } g) continue;
+            if ((c.SplitPercent is null && c.SplitPercentTruck is null) || Net.GeometryOf(c) is not { } g) continue;
+            var parts = new List<string>();
+            if (c.SplitPercent is { } pct) parts.Add($"{pct:0.#}%");
+            if (c.SplitPercentTruck is { } pt) parts.Add($"pes. {pt:0.#}%");
             var at = ToScreen(g.Axis.At(Math.Min(g.Axis.Length * 0.35, 25)).Point);
-            DrawLabelAt(ctx, $"{pct:0.#}%", at);
+            DrawLabelAt(ctx, string.Join(" · ", parts), at);
         }
     }
 

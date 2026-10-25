@@ -30,8 +30,11 @@ public static class RouteFinder
 {
     public const int MaxPaths = 500;
 
-    /// <summary>Todos os caminhos a partir do início do link (no máximo <see cref="MaxPaths"/>).</summary>
-    public static List<NetPath> PathsFrom(ConflictAnalysis analysis, int linkId)
+    /// <summary>
+    /// Todos os caminhos a partir do início do link (no máximo <see cref="MaxPaths"/>), com a chance de cada
+    /// um para a classe de veículo (os percentuais dos conectores podem ser diferentes para os pesados).
+    /// </summary>
+    public static List<NetPath> PathsFrom(ConflictAnalysis analysis, int linkId, VehicleClass cls = VehicleClass.Car)
     {
         var topo = analysis.Topology;
         var net = topo.Network;
@@ -88,7 +91,7 @@ public static class RouteFinder
                         else Emit(p);
                         steps.RemoveAt(steps.Count - 1);
                         used.Remove(cs);
-                    }, c.SplitPercent));
+                    }, c.SplitFor(cls)));
                 }
             }
 
@@ -112,13 +115,13 @@ public static class RouteFinder
     /// Como os veículos se dividem num corte de link: seguir no link (ConnectorId null) e cada conector
     /// que sai dali, com a fração de cada um (somam 1).
     /// </summary>
-    public static List<(int? ConnectorId, double Share)> SplitAt(Topology topo, NodeKey node)
+    public static List<(int? ConnectorId, double Share)> SplitAt(Topology topo, NodeKey node, VehicleClass cls = VehicleClass.Car)
     {
         var net = topo.Network;
         var options = new List<(int? Id, double? Percent)>();
         if (topo.Has(node.LinkId) && !topo.IsLinkEnd(node)) options.Add((null, null));
         foreach (var c in net.Connectors.Where(c => topo.Covers(c) && net.GeometryOf(c) is not null && topo.FromNode(c).Equals(node)))
-            options.Add((c.Id, c.SplitPercent));
+            options.Add((c.Id, c.SplitFor(cls)));
         var shares = Shares([.. options.Select(o => o.Percent)]);
         return [.. options.Select((o, i) => (o.Id, shares[i]))];
     }

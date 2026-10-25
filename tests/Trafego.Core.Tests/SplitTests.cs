@@ -78,6 +78,95 @@ public class SplitTests
     }
 
     [Fact]
+    public void Pesados_podem_ter_percentual_proprio_e_sem_ele_seguem_o_dos_leves()
+    {
+        var (net, main, ramp, exit) = SumoExportTests.Diverge();
+        exit.SplitPercent = 70;
+        var a = ConflictAnalysis.Of(net);
+        Assert.Equal(0.7, RouteFinder.PathsFrom(a, main.Id, VehicleClass.Truck).Single(p => p.EndLinkId == ramp.Id).Probability, 9);
+
+        exit.SplitPercentTruck = 10;
+        a = ConflictAnalysis.Of(net);
+        Assert.Equal(0.7, RouteFinder.PathsFrom(a, main.Id).Single(p => p.EndLinkId == ramp.Id).Probability, 9);
+        Assert.Equal(0.1, RouteFinder.PathsFrom(a, main.Id, VehicleClass.Truck).Single(p => p.EndLinkId == ramp.Id).Probability, 9);
+
+        // Só o dos pesados definido: os leves continuam com a divisão igual.
+        exit.SplitPercent = null;
+        a = ConflictAnalysis.Of(net);
+        Assert.Equal(0.5, RouteFinder.PathsFrom(a, main.Id).Single(p => p.EndLinkId == ramp.Id).Probability, 9);
+    }
+
+    [Fact]
+    public void Exportacao_da_aos_caminhoes_a_sua_propria_distribuicao_de_rotas()
+    {
+        var (net, _, _, exit) = SumoExportTests.Diverge();
+        var input = net.Inputs[0];
+        input.TruckShare = 0.3;
+        exit.SplitPercent = 70;
+        exit.SplitPercentTruck = 10;
+        var routes = SumoExport.From(net).Routes(0, 900).Root!;
+
+        Assert.Equal([$"rd{input.Id}", $"rd{input.Id}_truck"], routes.Elements("routeDistribution").Select(d => (string)d.Attribute("id")!));
+        var flows = routes.Elements("flow").ToDictionary(f => (string)f.Attribute("type")!, f => (string)f.Attribute("route")!);
+        Assert.Equal($"rd{input.Id}", flows["car"]);
+        Assert.Equal($"rd{input.Id}_truck", flows["truck"]);
+        var truckProbs = routes.Elements("routeDistribution").Last().Elements("route").Select(r => (double)r.Attribute("probability")!).Order();
+        Assert.Equal([0.1, 0.9], truckProbs.Select(p => Math.Round(p, 9)));
+
+        // Sem percentual de pesados em nenhum conector, uma distribuição só (como antes).
+        exit.SplitPercentTruck = null;
+        Assert.Single(SumoExport.From(net).Routes(0, 900).Root!.Elements("routeDistribution"));
+    }
+
+    [Fact]
+    public void Validacao_dos_percentuais_dos_pesados()
+    {
+        var net = new Network();
+        var a = net.AddLink([new(0, 0), new(100, 0)]);
+        var b = net.AddLink([new(110, -20), new(200, -40)]);
+        var c = net.AddLink([new(110, 20), new(200, 40)]);
+        var cb = net.AddConnector(a, 0, a.Axis().Length, b, 0, 0);
+        var cc = net.AddConnector(a, 0, a.Axis().Length, c, 0, 0);
+        cb.SplitPercentTruck = 80;
+        cc.SplitPercentTruck = 40;
+        Assert.Contains(Validation.Check(net), i => i.Message.Contains("percentuais dos pesados") && i.Message.Contains("120%"));
+        cc.SplitPercentTruck = 120;
+        Assert.Contains(Validation.Check(net), i => i.Severity == Severity.Error && i.Message.Contains("pesados deve ficar entre 0 e 100"));
+    }
+
+    [Fact]
+    public void No_SUMO_carros_e_caminhoes_seguem_cada_um_o_seu_percentual()
+    {
+        if (SumoInstall.Home is null) return;
+        var (net, _, ramp, exit) = SumoExportTests.Diverge();
+        net.Inputs[0].VolumeVph = 1500;
+        net.Inputs[0].TruckShare = 0.4;
+        exit.SplitPercent = 70;
+        exit.SplitPercentTruck = 10;
+        var dir = Directory.CreateTempSubdirectory("trafego-split-truck").FullName;
+        try
+        {
+            var scenario = SumoScenario.Prepare(net, dir, new SimulationSettings { StartTimeOfDay = 7 * 3600, DurationMinutes = 40 });
+            var run = SumoInstall.Run("sumo", scenario.SumoArgs("--tripinfo-output", "trips.xml"), dir);
+            Assert.True(run.ExitCode == 0, run.Output);
+            var trips = XDocument.Load(Path.Combine(dir, "trips.xml")).Root!.Elements("tripinfo").ToList();
+            var rampEdge = scenario.Export.LinkPieces[ramp.Id][0].EdgeId;
+            double RampShare(string type)
+            {
+                var of = trips.Where(t => (string?)t.Attribute("vType") == type).ToList();
+                Assert.True(of.Count > 100, $"poucos veículos do tipo {type}: {of.Count}");
+                return of.Count(t => ((string)t.Attribute("arrivalLane")!).StartsWith(rampEdge + "_")) / (double)of.Count;
+            }
+            Assert.InRange(RampShare("car"), 0.63, 0.77);
+            Assert.InRange(RampShare("truck"), 0.04, 0.17);
+        }
+        finally
+        {
+            Directory.Delete(dir, recursive: true);
+        }
+    }
+
+    [Fact]
     public void Percentual_vai_e_volta_no_arquivo_do_projeto()
     {
         var (net, main, _, exit) = SumoExportTests.Diverge();

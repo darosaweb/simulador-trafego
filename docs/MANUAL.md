@@ -285,6 +285,9 @@ rodovia por onde passam 60% dos veículos, ponha 60 no conector da saída; os 40
 - O que sobra vai, em partes iguais, para as opções sem percentual (seguir no link e os outros conectores).
   Num cruzamento, dá para pôr só as conversões (ex.: 20% à esquerda, 15% à direita) e o resto segue em frente.
 - O painel mostra como fica a divisão naquele ponto, e o mapa mostra o percentual sobre o conector.
+- **Pesados diferentes dos leves**: marque **Percentual diferente para pesados** e digite o valor. Exemplo: numa
+  saída que 70% dos carros pegam, mas só 10% dos caminhões, ponha 70 em Percentual e 10 em Pesados. Sem essa
+  opção, os caminhões seguem o mesmo percentual dos carros. O mapa mostra "70% · pes. 10%".
 - Se os percentuais de um ponto somarem mais de 100% (ou menos, sem outra opção), a verificação avisa e eles
   são ajustados para somar 100%.
 - Vale para entradas **sem** matriz O/D; as entradas com matriz seguem as rotas da matriz.
