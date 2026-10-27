@@ -286,9 +286,58 @@ public partial class MainWindow : Window
                            $"{net.Inputs.Count} entrada(s), {TotalVolumeAtStart():0} veíc/h no início da simulação\n{scale}";
 
         var issues = Validation.Check(net);
-        IssuesText.Text = issues.Count == 0
-            ? "Nenhum problema encontrado."
-            : string.Join("\n", issues.Select(i => (i.Severity == Severity.Error ? "✖ " : "⚠ ") + i.Message));
+        ShowNotices(IssuesList, issues.Select(i => (i.Severity == Severity.Error ? "✖" : "⚠", MapNotice.Of(net, i))).ToList(),
+            "#9aa4b2", empty: "Nenhum problema encontrado.");
+    }
+
+    // ---------------------------------------------------------------- avisos clicáveis
+
+    private IReadOnlyList<MapTarget>? _shownNotice;
+
+    /// <summary>
+    /// Lista de avisos; os que citam objetos do mapa são clicáveis: destacam esses objetos e enquadram a
+    /// vista neles. Clicar de novo no mesmo aviso tira o destaque.
+    /// </summary>
+    private void ShowNotices(StackPanel panel, IReadOnlyList<(string Icon, MapNotice Notice)> notices, string color, string? empty = null)
+    {
+        var key = string.Join("\n", notices.Select(n => n.Icon + n.Notice.Text + string.Join(",", n.Notice.Targets)));
+        if (panel.Tag as string == key) return; // nada mudou: não refaz (a tela atualiza a cada passo da simulação)
+        panel.Tag = key;
+        panel.Children.Clear();
+        if (notices.Count == 0 && empty is not null)
+            panel.Children.Add(new TextBlock { Classes = { "muted" }, Text = empty });
+        foreach (var (icon, notice) in notices)
+        {
+            var clickable = notice.Targets.Count > 0;
+            var item = new Border
+            {
+                Classes = { "notice" },
+                Child = new TextBlock { Classes = { "muted" }, Text = $"{icon} {notice.Text}", Foreground = Avalonia.Media.Brush.Parse(color) },
+            };
+            if (clickable)
+            {
+                item.Classes.Add("link");
+                ToolTip.SetTip(item, "Clique para mostrar no mapa");
+                item.PointerPressed += (_, e) =>
+                {
+                    e.Handled = true;
+                    var again = _shownNotice == notice.Targets && MapCanvas.FocusTargets == notice.Targets;
+                    foreach (var other in new[] { IssuesList, SimNotices }.SelectMany(p => p.Children))
+                        other.Classes.Remove("active");
+                    if (again)
+                    {
+                        _shownNotice = null;
+                        MapCanvas.ClearFocus();
+                        return;
+                    }
+                    _shownNotice = notice.Targets;
+                    item.Classes.Add("active");
+                    MapCanvas.FocusOn(notice.Targets);
+                    SetStatus($"Em destaque (magenta): {notice.Text}");
+                };
+            }
+            panel.Children.Add(item);
+        }
     }
 
     // ---------------------------------------------------------------- ferramentas e teclado
@@ -774,6 +823,8 @@ public partial class MainWindow : Window
         MapCanvas.CancelToolState();
         _editor.SetReadOnly(true);
         SimWarnings.Text = "";
+        _simNoticesOf = null;
+        ShowNotices(SimNotices, [], "#e8b04a");
         SetStatus("Preparando o cenário no SUMO (netconvert)…");
         try
         {
@@ -841,10 +892,19 @@ public partial class MainWindow : Window
             $"entraram     {s.Departed}\n" +
             $"saíram       {s.Arrived}\n" +
             $"vel. média   {s.MeanSpeed * 3.6:0} km/h";
-        SimWarnings.Text = _sim.Scenario is { Export.Warnings.Count: > 0 } sc
-            ? string.Join("\n", sc.Export.Warnings.Distinct().Take(8).Select(w => "⚠ " + w))
-            : "";
+        if (_sim.Scenario is { } sc && !ReferenceEquals(_simNoticesOf, sc))
+        {
+            _simNoticesOf = sc;
+            var notices = SumoMessages.ExplainAll(sc.Export, sc.Network);
+            var shown = notices.Take(MaxSimNotices).Select(n => ("⚠", n)).ToList();
+            if (notices.Count > MaxSimNotices)
+                shown.Add(("…", new MapNotice($"mais {notices.Count - MaxSimNotices} aviso(s) — veja a pasta do cenário SUMO.", [])));
+            ShowNotices(SimNotices, shown, "#e8b04a");
+        }
     }
+
+    private const int MaxSimNotices = 12;
+    private SumoScenario? _simNoticesOf;
 
     private void OnOpenScenarioFolder(object? sender, RoutedEventArgs e)
     {

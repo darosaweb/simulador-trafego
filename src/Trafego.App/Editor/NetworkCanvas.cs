@@ -229,6 +229,7 @@ public sealed class NetworkCanvas : Control
             return;
         }
         if (_editor.ReadOnly) return;
+        ClearFocus(); // voltou a editar: o destaque do aviso sai
 
         if (_splitLinkId is { } splitId)
         {
@@ -803,6 +804,7 @@ public sealed class NetworkCanvas : Control
             }
             DrawVehicles(ctx);
             DrawSignalHeads(ctx);
+            if (!_video) DrawFocus(ctx);
         }
 
         if (!_video)
@@ -1057,6 +1059,86 @@ public sealed class NetworkCanvas : Control
                     break;
             }
         }
+    }
+
+    private IReadOnlyList<MapTarget> _focus = [];
+    private static readonly IBrush FocusFill = new SolidColorBrush(Color.FromArgb(140, 255, 61, 242));
+    private static readonly IBrush FocusStroke = new SolidColorBrush(Color.Parse("#ff3df2"));
+
+    public IReadOnlyList<MapTarget> FocusTargets => _focus;
+
+    /// <summary>Destaca os objetos citados num aviso e enquadra a vista neles.</summary>
+    public void FocusOn(IReadOnlyList<MapTarget> targets)
+    {
+        _focus = targets;
+        var pts = targets.SelectMany(t => FocusShape(t)?.Points ?? []).ToList();
+        if (pts.Count > 0 && Bounds.Width > 0 && Bounds.Height > 0)
+        {
+            var min = new Vec2(pts.Min(p => p.X), pts.Min(p => p.Y));
+            var max = new Vec2(pts.Max(p => p.X), pts.Max(p => p.Y));
+            const double margin = 60, minExtent = 80; // não aproxima demais: dá para ver o entorno
+            var size = max - min;
+            _zoom = Math.Clamp(Math.Min((Bounds.Width - 2 * margin) / Math.Max(size.X, minExtent),
+                                        (Bounds.Height - 2 * margin) / Math.Max(size.Y, minExtent)), 0.01, 500);
+            var center = (min + max) / 2;
+            _pan = new Vec2(Bounds.Width / 2 - center.X * _zoom, Bounds.Height / 2 - center.Y * _zoom);
+        }
+        InvalidateVisual();
+    }
+
+    public void ClearFocus()
+    {
+        if (_focus.Count == 0) return;
+        _focus = [];
+        InvalidateVisual();
+    }
+
+    /// <summary>Forma a destacar (mundo) e os pontos dela para enquadrar.</summary>
+    private (Geometry Geometry, List<Vec2> Points)? FocusShape(MapTarget t)
+    {
+        switch (t.Kind)
+        {
+            case MapTargetKind.Link when Net.FindLink(t.Id) is { Points.Count: >= 2 } link:
+            {
+                var topo = _editor.Analysis.Topology;
+                var axis = t.Piece is { } p && topo.Has(link.Id) && p < topo.PieceCount(link.Id)
+                    ? link.Axis().Slice(topo.Cuts(link.Id)[p], topo.Cuts(link.Id)[p + 1])
+                    : [.. link.Axis().Points];
+                if (axis.Count < 2) return null;
+                var (right, left) = t.Lane is { } l && l < link.Lanes.Count
+                    ? (link.LaneRightEdge(l), link.LaneLeftEdge(l))
+                    : (-link.TotalWidth / 2 - 0.8, link.TotalWidth / 2 + 0.8);
+                return (Ribbon(axis, right, left), axis);
+            }
+            case MapTargetKind.Connector when Net.FindConnector(t.Id) is { } c && Net.GeometryOf(c) is { } g:
+            {
+                var axis = g.Axis.Points;
+                if (t.Lane is { } l && l < g.LaneOffsets.Length)
+                    return (Ribbon(axis, g.LaneOffsets[l] - g.LaneWidths[l] / 2, g.LaneOffsets[l] + g.LaneWidths[l] / 2), [.. axis]);
+                return (Ribbon(axis, -g.TotalWidth / 2 - 0.8, g.TotalWidth / 2 + 0.8), [.. axis]);
+            }
+            case MapTargetKind.Junction when _editor.Analysis.FindJunction(t.Id) is { Outline.Count: >= 3 } j:
+                return (Shape(j.Outline, closed: true), [.. j.Outline]);
+            case MapTargetKind.Input when Net.FindInput(t.Id) is { } input && Net.FindLink(input.LinkId) is { Points.Count: >= 2 } il:
+                return Spot(il.Axis().At(0).Point, il.TotalWidth);
+            case MapTargetKind.Measurement when Net.FindMeasurement(t.Id) is { } m && Net.FindLink(m.LinkId) is { Points.Count: >= 2 } ml:
+                return Spot(ml.Axis().At(Math.Clamp(m.S, 0, ml.Axis().Length)).Point, ml.TotalWidth);
+        }
+        return null;
+
+        static (Geometry, List<Vec2>) Spot(Vec2 p, double width)
+        {
+            var r = Math.Max(width, 6);
+            return (new EllipseGeometry(new Rect(p.X - r, p.Y - r, 2 * r, 2 * r)), [p - new Vec2(r, r), p + new Vec2(r, r)]);
+        }
+    }
+
+    /// <summary>Objetos do aviso clicado: magenta por cima de tudo, com contorno.</summary>
+    private void DrawFocus(DrawingContext ctx)
+    {
+        foreach (var t in _focus)
+            if (FocusShape(t) is { } shape)
+                ctx.DrawGeometry(FocusFill, new Pen(FocusStroke, Px(2.5)), shape.Geometry);
     }
 
     /// <summary>Saídas da rede (destinos da matriz O/D): um quadrado no fim do link, quando há entradas.</summary>

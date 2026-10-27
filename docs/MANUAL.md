@@ -107,7 +107,9 @@ Deixe uns 10 a 20 m de espaço entre o fim das aproximações e o começo das sa
   - **F**: enquadrar a foto inteira.
   - A barra de escala fica no canto inferior esquerdo.
 - **Painel da direita**: propriedades do que está selecionado. Sem seleção, mostra o resumo da rede, a
-  **verificação** (erros ✖ e avisos ⚠) e uma ajuda rápida.
+  **verificação** (erros ✖ e avisos ⚠) e uma ajuda rápida. **Clique num aviso** para ver no mapa os objetos
+  envolvidos: a vista se aproxima deles e eles ficam em **magenta**. Clique de novo no aviso (ou volte a editar
+  o mapa) para tirar o destaque.
 - **Barra de status** (embaixo): dicas da ferramenta atual, mensagens e a posição do cursor em metros.
 
 **Ferramentas**
@@ -318,6 +320,18 @@ Na barra de ferramentas:
 
 Durante a simulação, a rede fica **só para leitura**: dá para mover a vista e dar zoom, mas não editar.
 O painel mostra o relógio, os veículos na rede, os parados, quantos entraram e saíram e a velocidade média.
+
+Logo abaixo vêm os **avisos do SUMO** sobre a rede gerada. Os ids internos do SUMO (como `L127_0_1` ou `J140`)
+aparecem com os nomes do editor ("faixa 2 de Link 127", "Nó 140"), e os avisos mais comuns vêm explicados em
+português. Como na verificação, **clique no aviso** para destacar no mapa o link, a faixa, o conector ou o nó
+de que ele fala. Os mais frequentes:
+
+| Aviso | O que significa |
+|---|---|
+| A faixa N de um link não recebe nenhum conector | nenhum conector chega nessa faixa; os veículos só entram nela trocando de faixa depois. Às vezes é intencional (uma faixa que começa ali) |
+| Curva muito fechada no início/fim de um conector | o conector faz um ângulo forte com a via; os veículos reduzem muito ali. Suavize a curva |
+| Curva fechada na passagem A → B | a velocidade cai na conversão. Normal em alças e conversões |
+| Conversões à esquerda que se cruzam | dois conectores se cruzam de um jeito que o SUMO não resolve bem; afaste-os |
 
 **Cores dos veículos**: vermelho parado → amarelo → verde a 60 km/h ou mais. Caminhões são um pouco mais escuros.
 

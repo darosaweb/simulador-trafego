@@ -223,7 +223,7 @@ public sealed class SumoExport
             var (from, to) = (NodeId(new NodeKey(link.Id, i)), NodeId(new NodeKey(link.Id, i + 1)));
             if (from == to)
             {
-                Warnings.Add($"{link.Name}: trecho inteiro dentro do nó {from}; ficou de fora.");
+                Warnings.Add($"{link.Name}: trecho inteiro dentro do nó '{from}'; ficou de fora.");
                 continue;
             }
             var edge = new XElement("edge",

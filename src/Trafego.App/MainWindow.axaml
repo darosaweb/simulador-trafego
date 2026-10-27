@@ -28,6 +28,21 @@
     <Style Selector="RadioButton /template/ ContentPresenter, CheckBox /template/ ContentPresenter">
       <Setter Property="TextWrapping" Value="Wrap" />
     </Style>
+    <Style Selector="Border.notice">
+      <Setter Property="Padding" Value="4,3" />
+      <Setter Property="Margin" Value="-4,1" />
+      <Setter Property="CornerRadius" Value="3" />
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="Border.notice.link">
+      <Setter Property="Cursor" Value="Hand" />
+    </Style>
+    <Style Selector="Border.notice.link:pointerover">
+      <Setter Property="Background" Value="#2d333b" />
+    </Style>
+    <Style Selector="Border.notice.active">
+      <Setter Property="Background" Value="#3a2440" />
+    </Style>
     <Style Selector="ToggleButton.tool">
       <Setter Property="Padding" Value="10,4" />
     </Style>
@@ -138,6 +153,7 @@
             <TextBlock Classes="h" Text="SIMULAÇÃO (SUMO)" />
             <TextBlock x:Name="SimStats" Classes="muted" FontFamily="Consolas,monospace" />
             <TextBlock x:Name="SimWarnings" Classes="muted" Margin="0,8,0,0" Foreground="#e8b04a" />
+            <StackPanel x:Name="SimNotices" Margin="0,8,0,0" />
             <Button Content="Abrir pasta do cenário SUMO" Margin="0,8,0,0" Click="OnOpenScenarioFolder"
                     ToolTip.Tip="Rede, rotas e configuração gerados; abra no netedit ou no sumo-gui para comparar" />
           </StackPanel>
@@ -273,7 +289,7 @@
             <TextBlock Classes="h" Text="REDE" />
             <TextBlock x:Name="NetworkInfo" Classes="muted" />
             <TextBlock Classes="h" Text="VERIFICAÇÃO" />
-            <TextBlock x:Name="IssuesText" Classes="muted" />
+            <StackPanel x:Name="IssuesList" />
             <TextBlock Classes="h" Text="COMO USAR" />
             <TextBlock Classes="muted" xml:space="preserve">• Roda do mouse: zoom. Botão do meio ou Espaço + arrastar: mover a vista.
 • Link: um trecho com N faixas no mesmo sentido. Desenhe no sentido do tráfego.

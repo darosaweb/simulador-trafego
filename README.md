@@ -14,6 +14,8 @@ O app abre com o exemplo `samples/exemplo.trafego.json`, uma foto já calibrada 
 **Como usar: veja o [Manual](docs/MANUAL.md)**, com um passo a passo do primeiro cenário (cruzamento com
 semáforo) e todas as ferramentas.
 
+Planejamento da distribuição pública (instalador, licenças): [docs/DISTRIBUICAO.md](docs/DISTRIBUICAO.md).
+
 ## Modelo de rede
 
 - **Link**: trecho com N faixas no mesmo sentido. A geometria é o eixo central (polilinha ou curva
