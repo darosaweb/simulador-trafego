@@ -313,6 +313,15 @@ rodovia por onde passam 60% dos veículos, ponha 60 no conector da saída; os 40
 - **Intervalos de tempo**: por exemplo 07:00, 07:15, 07:30… Cada um vale até o seguinte, todos os dias.
   Servem para simular a variação ao longo do pico.
 - **Volume por entrada**: o volume de cada entrada em cada intervalo (para entradas sem matriz).
+- **Importar contagens…**: traz o CSV do **Contador de Vias**, o app de celular para contar carros e
+  caminhões em campo (`https://darosaweb.github.io/simulador-trafego/contador/`).
+  - **Nomes:** cada via contada com o mesmo nome de uma entrada vira o volume dela. Maiúsculas e acentos não
+    importam.
+  - **Intervalos:** cada contagem vai para o intervalo em que foi feita. Se só existe o intervalo padrão, é
+    criado um por hora contada.
+  - **Pesados:** o % de pesados da entrada passa a ser o das contagens.
+  - **Avisos e desfazer:** as vias sem entrada correspondente aparecem num aviso, e Ctrl+Z desfaz a
+    importação.
 - **Matriz O/D**: origens são as entradas; destinos são as **saídas** — links que terminam sem conector,
   marcados no mapa com um **quadrado rosa**. Se uma entrada não alcança uma saída, aparece "sem caminho".
   Uma entrada com algum valor na matriz passa a usá-la (o volume do painel deixa de valer).

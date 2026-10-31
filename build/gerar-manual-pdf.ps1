@@ -1,8 +1,9 @@
 ﻿# Gera docs/Manual-daRosa-Trafego.pdf a partir do manual (docs/MANUAL.md), com o mesmo visual da Ajuda.
-# Precisa do app compilado (dotnet build) e do Microsoft Edge.
+# Precisa do app compilado (dotnet build) e do Microsoft Edge. -Exe usa outro Trafego.exe (ex.: um build em outra pasta).
+param([string]$Exe)
 $ErrorActionPreference = 'Stop'
 $root = Split-Path $PSScriptRoot
-$exe = Join-Path $root 'src\Trafego.App\bin\Debug\net8.0\Trafego.exe'
+$exe = if ($Exe) { $Exe } else { Join-Path $root 'src\Trafego.App\bin\Debug\net8.0\Trafego.exe' }
 if (-not (Test-Path $exe)) { throw "Compile antes: dotnet build (não achei $exe)" }
 $edge = @("${env:ProgramFiles(x86)}\Microsoft\Edge\Application\msedge.exe", "$env:ProgramFiles\Microsoft\Edge\Application\msedge.exe") |
     Where-Object { Test-Path $_ } | Select-Object -First 1

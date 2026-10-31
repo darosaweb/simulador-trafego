@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using Trafego.Core.Model;
 
@@ -20,6 +21,8 @@ public sealed class DemandWindow : Window
     private (int Origin, int Destination)? _pair;
     private bool _building;
     private bool _rebuildOnBlur;
+    /// <summary>Resumo da última importação de contagens, mostrado acima da tabela de volumes.</summary>
+    private string? _importNote;
     /// <summary>Pares O/D quando a janela foi montada: se mudarem, a lista de rotas precisa ser refeita.</summary>
     private List<(int Origin, int Destination)> _builtPairs = [];
 
@@ -130,6 +133,9 @@ public sealed class DemandWindow : Window
     {
         panel.Children.Add(Header("VOLUME POR ENTRADA (veíc/h)"));
         panel.Children.Add(Note("Para entradas sem matriz O/D: os veículos entram com este volume e, em cada escolha, as opções têm a mesma chance."));
+        panel.Children.Add(Row(Button("Importar contagens…", ImportCounts),
+            Note("CSV do Contador de Vias: cada via com o mesmo nome de uma entrada preenche o volume e o % de pesados dela.")));
+        if (_importNote is not null) panel.Children.Add(new TextBlock { Text = _importNote, TextWrapping = TextWrapping.Wrap, MaxWidth = 900, HorizontalAlignment = HorizontalAlignment.Left });
         if (Net.Inputs.Count == 0)
         {
             panel.Children.Add(Note("Nenhuma entrada. Use a ferramenta Entrada (E) no mapa."));
@@ -157,6 +163,44 @@ public sealed class DemandWindow : Window
             }
         }
         panel.Children.Add(grid);
+    }
+
+    private async void ImportCounts()
+    {
+        var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = "Importar contagens do Contador de Vias",
+            FileTypeFilter = [new FilePickerFileType("CSV") { Patterns = ["*.csv", "*.txt"] }, FilePickerFileTypes.All],
+        });
+        if (files.Count == 0 || files[0].TryGetLocalPath() is not { } path) return;
+        try
+        {
+            var samples = CountImport.Parse(await File.ReadAllTextAsync(path));
+            var result = CountImport.Apply(Net, samples);
+            _importNote = Describe(result, samples.Count);
+            if (result.Applied.Count > 0) Commit();
+        }
+        catch (Exception ex)
+        {
+            _importNote = "Não foi possível importar: " + ex.Message.Split('\n')[0];
+        }
+        Dispatcher.UIThread.Post(Build);
+    }
+
+    private static string Describe(CountImportResult r, int samples)
+    {
+        if (samples == 0) return "Nenhuma contagem no arquivo.";
+        var parts = new List<string>();
+        if (r.Applied.Count == 0) parts.Add("Nenhuma via do arquivo tem o nome de uma entrada da rede: renomeie as entradas (no painel) ou as vias no contador.");
+        else
+        {
+            parts.Add("Importado: " + string.Join("; ", r.Applied.Select(a =>
+                $"{a.Input.Name} ({a.Samples} contage{(a.Samples > 1 ? "ns" : "m")}, {a.Slices} intervalo{(a.Slices > 1 ? "s" : "")}, {a.TruckShare * 100:0}% pesados" +
+                (a.UsesMatrix ? ", mas usa a matriz O/D e o volume não vale" : "") + ")")) + ".");
+            if (r.CreatedSlices > 0) parts.Add($"Criado(s) {r.CreatedSlices} intervalo(s) de uma hora.");
+        }
+        if (r.Unmatched.Count > 0) parts.Add("Sem entrada com o mesmo nome: " + string.Join(", ", r.Unmatched) + ".");
+        return string.Join(" ", parts) + (r.Applied.Count > 0 ? " Ctrl+Z desfaz." : "");
     }
 
     // ------------------------------------------------------------------ matriz O/D

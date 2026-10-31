@@ -1,0 +1,550 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Contador de Vias</title>
+<meta name="description" content="Contagem de veículos em campo: carros e caminhões por via, com estimativa de veículos por hora. Parte do daRosa Tráfego.">
+<meta name="theme-color" content="#CC3467">
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icones/favicon.png">
+<link rel="apple-touch-icon" href="icones/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Contador">
+<style>
+@font-face { font-family: 'Barlow'; font-style: normal; font-weight: 400; font-display: swap; src: url(fontes/Barlow-400.woff2) format('woff2'); }
+@font-face { font-family: 'Barlow'; font-style: normal; font-weight: 500; font-display: swap; src: url(fontes/Barlow-500.woff2) format('woff2'); }
+@font-face { font-family: 'Barlow'; font-style: normal; font-weight: 600; font-display: swap; src: url(fontes/Barlow-600.woff2) format('woff2'); }
+@font-face { font-family: 'Barlow Condensed'; font-style: normal; font-weight: 500; font-display: swap; src: url(fontes/BarlowCondensed-500.woff2) format('woff2'); }
+@font-face { font-family: 'Barlow Condensed'; font-style: normal; font-weight: 600; font-display: swap; src: url(fontes/BarlowCondensed-600.woff2) format('woff2'); }
+@font-face { font-family: 'Barlow Condensed'; font-style: normal; font-weight: 700; font-display: swap; src: url(fontes/BarlowCondensed-700.woff2) format('woff2'); }
+/* Brand: daRosa neutrals (papel/tinta) and framboesa accent; car and truck keep their functional blue and yellow. */
+/* Layout: one-screen counter — via chips on top, timer in the middle, two huge tap pads at the bottom; history in a second tab. */
+:root {
+  --bg: #fff7f6;
+  --surface: #ffffff;
+  --line: #ecd9d8;
+  --fg: #231f20;
+  --muted: #6b5d5f;
+  --car: #1f6fb2;
+  --car-ink: #ffffff;
+  --truck: #e0a100;
+  --truck-ink: #1d1600;
+  --accent: #cc3467;
+  --accent-ink: #ffffff;
+  --danger: #b3261e;
+  --display: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", system-ui, sans-serif;
+  --body: "Barlow", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #1b1718; --surface: #262021; --line: #3d3334; --fg: #f6eeee; --muted: #b3a3a4;
+  --car: #3d8fd6; --car-ink: #ffffff; --truck: #f0b51c; --truck-ink: #1d1600;
+  --accent: #ff8ca1; --accent-ink: #231f20; --danger: #ef6b62; color-scheme: dark;
+} }
+:root[data-theme="dark"] {
+  --bg: #1b1718; --surface: #262021; --line: #3d3334; --fg: #f6eeee; --muted: #b3a3a4;
+  --car: #3d8fd6; --car-ink: #ffffff; --truck: #f0b51c; --truck-ink: #1d1600;
+  --accent: #ff8ca1; --accent-ink: #231f20; --danger: #ef6b62; color-scheme: dark;
+}
+[hidden] { display: none !important; }
+html, body { height: 100%; margin: 0; }
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 15px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  -webkit-tap-highlight-color: transparent;
+}
+button { font: inherit; color: inherit; cursor: pointer; }
+button:focus-visible, input:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.app { height: 100%; display: flex; flex-direction: column; gap: 12px; padding-block: 10px 12px; max-width: 640px; margin: 0 auto; }
+
+header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.brand { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.brand img { width: 36px; height: 36px; flex: 0 0 auto; }
+.brand small { display: block; font-size: 11px; font-weight: 600; letter-spacing: .06em; color: var(--accent); line-height: 1.1; }
+h1 { font-family: var(--display); font-weight: 700; font-size: 22px; letter-spacing: .02em; margin: 0; text-transform: uppercase; }
+.tabs { display: flex; gap: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 3px; }
+.tabs button { border: 0; background: transparent; padding: 6px 12px; border-radius: 7px; font-weight: 600; color: var(--muted); }
+.tabs button[aria-selected="true"] { background: var(--fg); color: var(--bg); }
+
+.label { font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+
+.vias { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
+.vias::-webkit-scrollbar { display: none; }
+.via { flex: 0 0 auto; border: 2px solid var(--line); background: var(--surface); border-radius: 12px; padding: 8px 12px; text-align: left; min-width: 120px; max-width: 200px; }
+.via b { display: block; font-family: var(--display); font-size: 18px; font-weight: 600; line-height: 1.1; }
+.via small { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.via[aria-pressed="true"] { border-color: var(--fg); background: var(--fg); color: var(--bg); }
+.via[aria-pressed="true"] small { color: inherit; opacity: .75; }
+.via.add { border-style: dashed; color: var(--muted); min-width: 0; font-weight: 600; }
+.via:disabled { opacity: .45; }
+
+.panel { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; }
+.clock { font-family: var(--display); font-weight: 700; font-size: 64px; line-height: .9; font-variant-numeric: tabular-nums; }
+.clock.run { color: var(--accent); }
+.durs { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+.durs button { border: 1px solid var(--line); background: transparent; border-radius: 8px; padding: 4px 10px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.durs button[aria-pressed="true"] { border-color: var(--fg); background: var(--fg); color: var(--bg); }
+.durs button:disabled { opacity: .4; }
+.go { border: 0; border-radius: 12px; background: var(--accent); color: var(--accent-ink); font-family: var(--display); font-size: 22px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; padding: 16px 18px; min-width: 120px; }
+.go.stop { background: transparent; color: var(--danger); border: 2px solid var(--danger); }
+.go:disabled { opacity: .4; }
+.rate { grid-column: 1 / -1; display: flex; gap: 16px; flex-wrap: wrap; font-variant-numeric: tabular-nums; color: var(--muted); font-size: 14px; border-top: 1px solid var(--line); padding-top: 8px; }
+.rate strong { color: var(--fg); font-weight: 600; }
+
+.pads { flex: 1; min-height: 220px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.pad { border: 0; border-radius: 18px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; touch-action: manipulation; user-select: none; -webkit-user-select: none; transition: transform .06s ease, filter .06s; }
+.pad.car { background: var(--car); color: var(--car-ink); }
+.pad.truck { background: var(--truck); color: var(--truck-ink); }
+.pad:active:not(:disabled), .pad.hit { transform: scale(.97); filter: brightness(1.12); }
+.pad:disabled { filter: grayscale(.85); opacity: .45; }
+.pad svg { width: 56px; height: 56px; }
+.pad .n { font-family: var(--display); font-size: 72px; font-weight: 700; line-height: .9; font-variant-numeric: tabular-nums; }
+.pad .t { font-family: var(--display); font-size: 20px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
+.pad .hint { font-size: 12px; opacity: .85; }
+
+.foot { display: flex; gap: 8px; align-items: center; justify-content: space-between; min-height: 40px; }
+.ghost { border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 9px 14px; font-weight: 600; }
+.ghost:disabled { opacity: .4; }
+.status { font-size: 13px; color: var(--muted); text-align: right; flex: 1; min-width: 0; }
+.status.ok { color: var(--accent); }
+.status.err { color: var(--danger); }
+
+/* history */
+.hist { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; padding-bottom: 8px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.card h2 { font-family: var(--display); font-size: 20px; font-weight: 700; margin: 0; text-transform: uppercase; letter-spacing: .02em; }
+.tbl { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; font-size: 14px; }
+th { text-align: left; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); font-weight: 600; padding: 4px 6px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+td { padding: 7px 6px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+td.num, th.num { text-align: right; }
+td.big { font-family: var(--display); font-size: 18px; font-weight: 700; }
+tr:last-child td { border-bottom: 0; }
+.row-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.del { border: 0; background: transparent; color: var(--muted); padding: 2px 6px; font-size: 13px; }
+.del.armed { color: var(--danger); font-weight: 600; }
+.empty { color: var(--muted); margin: 0; line-height: 1.5; }
+pre.out { margin: 0; white-space: pre-wrap; font-size: 13px; background: var(--bg); border-radius: 8px; padding: 10px; max-height: 160px; overflow: auto; }
+
+/* via editor */
+.ed { display: flex; flex-direction: column; gap: 8px; }
+.ed-row { display: flex; gap: 6px; align-items: center; }
+.ed-row input { flex: 1; min-width: 0; border: 1px solid var(--line); background: var(--bg); color: var(--fg); border-radius: 8px; padding: 9px 10px; font: inherit; }
+
+.card p { margin: 0; line-height: 1.5; }
+.card a { color: var(--accent); font-weight: 600; }
+.toast { position: fixed; left: 50%; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--fg); color: var(--bg); padding: 12px 16px; border-radius: 12px; font-weight: 600; max-width: calc(100% - 32px); text-align: center; z-index: 20; box-shadow: 0 6px 24px rgba(0,0,0,.25); }
+
+@media (max-height: 640px) { .clock { font-size: 48px; } .pad .n { font-size: 56px; } .pad svg { width: 40px; height: 40px; } }
+@media (prefers-reduced-motion: reduce) { .pad { transition: none; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand">
+      <img src="icones/icone-192.png" alt="">
+      <div><small>daRosa Tráfego</small><h1>Contador de Vias</h1></div>
+    </div>
+    <div class="tabs" role="tablist">
+      <button id="tab-contar" role="tab" aria-selected="true">Contar</button>
+      <button id="tab-hist" role="tab" aria-selected="false">Resultados</button>
+    </div>
+  </header>
+
+  <section id="v-contar" style="display:contents">
+    <div>
+      <div class="label" style="margin-bottom:6px">Via</div>
+      <div class="vias" id="vias"></div>
+    </div>
+
+    <div class="panel">
+      <div>
+        <div class="clock" id="clock">1:00</div>
+        <div class="durs" id="durs"></div>
+      </div>
+      <button class="go" id="go">Iniciar</button>
+      <div class="rate" id="rate"><span>Escolha a via e toque em Iniciar.</span></div>
+    </div>
+
+    <div class="pads">
+      <button class="pad car" id="pad-car" disabled aria-label="Contar carro">
+        <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round" aria-hidden="true"><path d="M8 40v-8l6-12h28l10 12h4v8z" fill="none"/><circle cx="18" cy="42" r="6" fill="currentColor"/><circle cx="46" cy="42" r="6" fill="currentColor"/></svg>
+        <span class="n" id="n-car">0</span><span class="t">Carro</span><span class="hint">inclui moto e van</span>
+      </button>
+      <button class="pad truck" id="pad-truck" disabled aria-label="Contar caminhão">
+        <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round" aria-hidden="true"><path d="M4 42V14h34v28zM38 24h12l8 10v8H38z"/><circle cx="14" cy="46" r="5" fill="currentColor"/><circle cx="48" cy="46" r="5" fill="currentColor"/></svg>
+        <span class="n" id="n-truck">0</span><span class="t">Caminhão</span><span class="hint">inclui ônibus</span>
+      </button>
+    </div>
+
+    <div class="foot">
+      <button class="ghost" id="undo" disabled>Desfazer último</button>
+      <div class="status" id="status" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <section id="v-hist" class="hist" hidden>
+    <div class="card">
+      <h2>Fluxo estimado por hora</h2>
+      <div class="tbl" id="agg"></div>
+      <div class="row-actions">
+        <button class="ghost" id="copy-txt">Copiar resumo</button>
+        <button class="ghost" id="copy-csv">Copiar CSV</button>
+        <button class="ghost" id="dl-csv">Baixar CSV</button>
+      </div>
+      <pre class="out" id="out" hidden></pre>
+    </div>
+    <div class="card">
+      <h2>Levar para o simulador</h2>
+      <p>No daRosa Tráfego, abra <b>Rede → Demanda…</b> e use <b>Importar contagens…</b> com o CSV baixado.
+        Cada via com o mesmo nome de uma entrada do projeto preenche o volume (veíc/h) e o % de pesados dela.
+        <a href="https://github.com/darosaweb/simulador-trafego/blob/main/contador/LEIA-ME.md" target="_blank" rel="noopener">Saiba mais</a></p>
+    </div>
+    <div class="card">
+      <h2>Contagens</h2>
+      <div class="tbl" id="list"></div>
+    </div>
+    <div class="card">
+      <h2>Vias</h2>
+      <div class="ed" id="ed"></div>
+      <div class="ed-row"><input id="new-via" placeholder="Nome da nova via, ex.: Alça leste" maxlength="40"><button class="ghost" id="add-via">Adicionar</button></div>
+    </div>
+  </section>
+</div>
+<div class="toast" id="toast" hidden></div>
+<noscript><p style="padding:16px">O Contador de Vias precisa de JavaScript.</p></noscript>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const DURS = [60, 120, 300];
+  const LS = { vias: "cv.vias", sess: "cv.sessoes", outbox: "cv.outbox", pref: "cv.pref" };
+  const ls = {
+    get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+  };
+
+  let db = null;                 // claude db namespace, or null → localStorage only
+  let vias = ls.get(LS.vias, []);
+  let sessoes = ls.get(LS.sess, []);
+  const pref = Object.assign({ via: null, dur: 60 }, ls.get(LS.pref, {}));
+  let run = null;                // { viaId, dur, t0, taps: [[ms, 'c'|'t']], tick }
+  let audio = null, wake = null;
+
+  /* ---------- helpers ---------- */
+  const pad2 = n => String(n).padStart(2, "0");
+  const fmtClock = s => `${Math.floor(s / 60)}:${pad2(Math.floor(s % 60))}`;
+  const nf = new Intl.NumberFormat("pt-BR");
+  const veicH = s => s.duracaoS > 0 ? Math.round((s.carros + s.caminhoes) * 3600 / s.duracaoS) : 0;
+  const pctPes = (c, t) => (c + t) ? Math.round(100 * t / (c + t)) : 0;
+  const viaNome = id => (vias.find(v => v.id === id) || {}).nome || "Via removida";
+  const sortedVias = () => vias.slice().sort((a, b) => (a.ordem ?? 0) - (b.ordem ?? 0));
+  const hourKey = iso => { const d = new Date(iso); return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())} ${pad2(d.getHours())}h`; };
+  const hhmm = iso => { const d = new Date(iso); return `${pad2(d.getHours())}:${pad2(d.getMinutes())}`; };
+  const ddmm = iso => { const d = new Date(iso); return `${pad2(d.getDate())}/${pad2(d.getMonth() + 1)}`; };
+  const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+  let toastT;
+  function toast(msg) { const t = $("toast"); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 3200); }
+  function status(msg, kind) { const s = $("status"); s.textContent = msg; s.className = "status" + (kind ? " " + kind : ""); }
+  function buzz(p) { try { navigator.vibrate && navigator.vibrate(p); } catch {} }
+  function beep(freq, ms) {
+    if (!audio) return;
+    try {
+      const o = audio.createOscillator(), g = audio.createGain();
+      o.frequency.value = freq; g.gain.value = .15; o.connect(g); g.connect(audio.destination);
+      o.start(); o.stop(audio.currentTime + ms / 1000);
+    } catch {}
+  }
+
+  /* ---------- rendering ---------- */
+  function lastFor(viaId) { return sessoes.filter(s => s.viaId === viaId).sort((a, b) => b.inicio.localeCompare(a.inicio))[0]; }
+
+  function renderVias() {
+    const box = $("vias"); box.innerHTML = "";
+    const list = sortedVias();
+    if (!list.length) {
+      const p = document.createElement("button"); p.className = "via add"; p.textContent = "+ Cadastrar a primeira via";
+      p.onclick = () => { showTab("hist"); $("new-via").focus(); }; box.append(p); return;
+    }
+    if (!list.some(v => v.id === pref.via)) pref.via = list[0].id;
+    for (const v of list) {
+      const b = document.createElement("button"); b.className = "via";
+      b.setAttribute("aria-pressed", String(v.id === pref.via)); b.disabled = !!run && v.id !== pref.via;
+      const last = lastFor(v.id);
+      b.innerHTML = `<b>${esc(v.nome)}</b><small>${last ? `${hhmm(last.inicio)} · ${nf.format(veicH(last))} veíc/h` : "sem contagem"}</small>`;
+      b.onclick = () => { if (run) return; pref.via = v.id; ls.set(LS.pref, pref); renderVias(); };
+      box.append(b);
+    }
+    box.querySelector('[aria-pressed="true"]')?.scrollIntoView({ inline: "nearest", block: "nearest" });
+  }
+
+  function renderDurs() {
+    const box = $("durs"); box.innerHTML = "";
+    for (const d of DURS) {
+      const b = document.createElement("button"); b.textContent = d / 60 + " min";
+      b.setAttribute("aria-pressed", String(d === pref.dur)); b.disabled = !!run;
+      b.onclick = () => { pref.dur = d; ls.set(LS.pref, pref); renderDurs(); renderCounter(); };
+      box.append(b);
+    }
+  }
+
+  function counts(taps) { let c = 0, t = 0; for (const [, k] of taps) k === "c" ? c++ : t++; return { c, t }; }
+
+  function renderCounter() {
+    const taps = run ? run.taps : [];
+    const { c, t } = counts(taps);
+    $("n-car").textContent = c; $("n-truck").textContent = t;
+    $("pad-car").disabled = $("pad-truck").disabled = !run;
+    $("undo").disabled = !run || !taps.length;
+    const go = $("go");
+    go.disabled = !vias.length;
+    go.textContent = run ? "Encerrar" : "Iniciar"; go.classList.toggle("stop", !!run);
+    const clock = $("clock");
+    if (run) {
+      const el = (performance.now() - run.t0) / 1000;
+      clock.textContent = fmtClock(Math.max(0, Math.ceil(run.dur - el)));
+      clock.classList.add("run");
+      const rate = el > 5 ? Math.round((c + t) * 3600 / el) : null;
+      $("rate").innerHTML = `<span>Contando <strong>${esc(viaNome(run.viaId))}</strong></span><span>Parcial: <strong>${rate == null ? "—" : nf.format(rate)}</strong> veíc/h</span><span>Pesados: <strong>${pctPes(c, t)}%</strong></span>`;
+    } else {
+      clock.textContent = fmtClock(pref.dur); clock.classList.remove("run");
+    }
+  }
+
+  function renderHist() {
+    // aggregate by via × hour: total vehicles over total time
+    const groups = new Map();
+    for (const s of sessoes) {
+      const k = hourKey(s.inicio) + "|" + s.viaId;
+      const g = groups.get(k) || { hora: hourKey(s.inicio), viaId: s.viaId, n: 0, c: 0, t: 0, dur: 0 };
+      g.n++; g.c += s.carros; g.t += s.caminhoes; g.dur += s.duracaoS; groups.set(k, g);
+    }
+    const ord = new Map(sortedVias().map((v, i) => [v.id, i]));
+    const rows = [...groups.values()].sort((a, b) => b.hora.localeCompare(a.hora) || (ord.get(a.viaId) ?? 99) - (ord.get(b.viaId) ?? 99));
+    $("agg").innerHTML = rows.length ? `<table><thead><tr><th>Hora</th><th>Via</th><th class="num">Amostras</th><th class="num">veíc/h</th><th class="num">Pesados</th></tr></thead><tbody>${
+      rows.map(g => `<tr><td>${esc(g.hora.slice(8, 10) + "/" + g.hora.slice(5, 7) + " " + g.hora.slice(11))}</td><td>${esc(viaNome(g.viaId))}</td><td class="num">${g.n} · ${fmtClock(g.dur)}</td><td class="num big">${nf.format(Math.round((g.c + g.t) * 3600 / g.dur))}</td><td class="num">${pctPes(g.c, g.t)}%</td></tr>`).join("")
+    }</tbody></table>` : `<p class="empty">Ainda sem contagens. Cada contagem de 1 minuto vira uma estimativa em veículos por hora. Várias contagens da mesma via na mesma hora são somadas e dão uma estimativa melhor.</p>`;
+    aggRows = rows;
+
+    const list = sessoes.slice().sort((a, b) => b.inicio.localeCompare(a.inicio));
+    $("list").innerHTML = list.length ? `<table><thead><tr><th>Início</th><th>Via</th><th class="num">Dur.</th><th class="num">Carros</th><th class="num">Cam.</th><th class="num">veíc/h</th><th></th></tr></thead><tbody>${
+      list.map(s => `<tr><td>${ddmm(s.inicio)} ${hhmm(s.inicio)}</td><td>${esc(viaNome(s.viaId))}</td><td class="num">${fmtClock(s.duracaoS)}</td><td class="num">${s.carros}</td><td class="num">${s.caminhoes}</td><td class="num big">${nf.format(veicH(s))}</td><td><button class="del" data-del="${esc(s.id)}">Excluir</button></td></tr>`).join("")
+    }</tbody></table>` : `<p class="empty">As contagens aparecem aqui assim que o tempo termina.</p>`;
+
+    const ed = $("ed"); ed.innerHTML = "";
+    for (const v of sortedVias()) {
+      const row = document.createElement("div"); row.className = "ed-row";
+      const inp = document.createElement("input"); inp.value = v.nome; inp.maxLength = 40; inp.id = "via-" + v.id; inp.setAttribute("aria-label", "Nome da via");
+      inp.onchange = () => { const n = inp.value.trim(); if (n && n !== v.nome) saveVia({ ...v, nome: n }); };
+      const del = document.createElement("button"); del.className = "del"; del.textContent = "Remover";
+      armable(del, () => removeVia(v));
+      row.append(inp, del); ed.append(row);
+    }
+    if (!vias.length) ed.innerHTML = `<p class="empty">Cadastre as vias que você vai contar, uma por sentido de tráfego. Use os mesmos nomes das entradas do projeto no daRosa Tráfego (ex.: Entrada oeste) para importar direto.</p>`;
+  }
+
+  // two-tap confirmation built into the page
+  function armable(btn, fn) {
+    btn.onclick = () => {
+      if (btn.classList.contains("armed")) { fn(); return; }
+      btn.classList.add("armed"); const old = btn.textContent; btn.textContent = "Confirmar?";
+      setTimeout(() => { btn.classList.remove("armed"); btn.textContent = old; }, 3000);
+    };
+  }
+
+  function renderAll() { renderVias(); renderDurs(); renderCounter(); renderHist(); }
+
+  /* ---------- storage ---------- */
+  function cacheLocal() { ls.set(LS.vias, vias); ls.set(LS.sess, sessoes); }
+
+  async function persistSession(s) {
+    if (!db) return true;
+    try { await db.doc("contagens/" + s.id).set(s); return true; }
+    catch (e) {
+      if (e && e.code === "unavailable") { try { await new Promise(r => setTimeout(r, 800 + Math.random() * 800)); await db.doc("contagens/" + s.id).set(s); return true; } catch {} }
+      return false;
+    }
+  }
+
+  async function flushOutbox() {
+    const box = ls.get(LS.outbox, []);
+    if (!db || !box.length) return;
+    const left = [];
+    for (const s of box) if (!(await persistSession(s))) left.push(s);
+    ls.set(LS.outbox, left);
+    if (!left.length) status("Contagens pendentes enviadas", "ok");
+  }
+
+  async function saveVia(v) {
+    vias = vias.filter(x => x.id !== v.id).concat(v); cacheLocal(); renderAll();
+    if (db) try { await db.doc("vias/" + v.id).set(v); } catch { toast("Não consegui salvar a via. Verifique a conexão."); }
+  }
+  async function removeVia(v) {
+    vias = vias.filter(x => x.id !== v.id); cacheLocal(); renderAll();
+    if (db) try { await db.doc("vias/" + v.id).delete(); } catch { toast("Não consegui remover a via."); }
+  }
+  async function removeSession(id) {
+    sessoes = sessoes.filter(s => s.id !== id); cacheLocal(); renderAll();
+    ls.set(LS.outbox, ls.get(LS.outbox, []).filter(s => s.id !== id));
+    if (db) try { await db.doc("contagens/" + id).delete(); } catch { toast("Não consegui excluir. Tente de novo."); }
+  }
+
+  /* ---------- counting ---------- */
+  async function start() {
+    if (!vias.length) return;
+    try { audio = audio || new (window.AudioContext || window.webkitAudioContext)(); audio.resume?.(); } catch {}
+    try { wake = await navigator.wakeLock?.request("screen"); } catch {}
+    run = { viaId: pref.via, dur: pref.dur, t0: performance.now(), wall: new Date(), taps: [] };
+    run.tick = setInterval(() => {
+      const el = (performance.now() - run.t0) / 1000;
+      if (el >= run.dur) finish(false); else renderCounter();
+    }, 200);
+    buzz(60); beep(880, 120); status(""); renderAll();
+  }
+
+  async function finish(early) {
+    if (!run) return;
+    clearInterval(run.tick);
+    const r = run; run = null;
+    try { await wake?.release(); } catch {} wake = null;
+    const elapsed = Math.min(r.dur, (performance.now() - r.t0) / 1000);
+    const { c, t } = counts(r.taps);
+    if (early && elapsed < 15) { status("Contagem descartada (menos de 15 s)"); renderAll(); return; }
+    const s = {
+      id: uid(), viaId: r.viaId, viaNome: viaNome(r.viaId), inicio: r.wall.toISOString(),
+      duracaoS: Math.round(elapsed), carros: c, caminhoes: t,
+      toques: r.taps.map(([ms, k]) => [Math.round(ms), k]),
+    };
+    sessoes.push(s); cacheLocal();
+    buzz([200, 100, 200]); beep(660, 180); setTimeout(() => beep(990, 260), 220);
+    toast(`${s.viaNome}: ${c} carros + ${t} caminhões → ${nf.format(veicH(s))} veíc/h, ${pctPes(c, t)}% pesados`);
+    // suggest the next via in the list
+    const list = sortedVias(); const i = list.findIndex(v => v.id === r.viaId);
+    if (list.length > 1) { pref.via = list[(i + 1) % list.length].id; ls.set(LS.pref, pref); }
+    renderAll();
+    $("rate").innerHTML = `<span>Salvo: <strong>${esc(s.viaNome)}</strong></span><span><strong>${nf.format(veicH(s))}</strong> veíc/h</span><span>Pesados: <strong>${pctPes(c, t)}%</strong></span>`;
+    if (db) {
+      status("Salvando…");
+      if (await persistSession(s)) status("Salvo na nuvem", "ok");
+      else { ls.set(LS.outbox, ls.get(LS.outbox, []).concat(s)); status("Sem conexão: guardado no aparelho, envio depois", "err"); }
+    } else status("Salvo neste aparelho", "ok");
+  }
+
+  function tap(kind, btn) {
+    if (!run) return;
+    run.taps.push([performance.now() - run.t0, kind]);
+    buzz(25); btn.classList.add("hit"); setTimeout(() => btn.classList.remove("hit"), 90);
+    renderCounter();
+  }
+
+  // pointerdown is faster than click and does not wait for the finger to lift
+  for (const [id, k] of [["pad-car", "c"], ["pad-truck", "t"]]) {
+    const b = $(id);
+    b.addEventListener("pointerdown", e => { e.preventDefault(); tap(k, b); });
+    b.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); tap(k, b); } });
+  }
+  document.addEventListener("keydown", e => {
+    if (!run || e.target.tagName === "INPUT") return;
+    if (e.key === "c" || e.key === "ArrowLeft") tap("c", $("pad-car"));
+    if (e.key === "t" || e.key === "ArrowRight") tap("t", $("pad-truck"));
+  });
+  $("go").onclick = () => run ? finish(true) : start();
+  $("undo").onclick = () => { if (run && run.taps.length) { run.taps.pop(); buzz(15); renderCounter(); } };
+  document.addEventListener("visibilitychange", async () => {
+    if (document.visibilityState === "visible" && run && !wake) try { wake = await navigator.wakeLock?.request("screen"); } catch {}
+  });
+
+  /* ---------- tabs & history actions ---------- */
+  function showTab(t) {
+    $("tab-contar").setAttribute("aria-selected", String(t === "contar"));
+    $("tab-hist").setAttribute("aria-selected", String(t === "hist"));
+    $("v-contar").hidden = t !== "contar"; $("v-contar").style.display = t === "contar" ? "contents" : "";
+    $("v-hist").hidden = t !== "hist";
+  }
+  $("tab-contar").onclick = () => showTab("contar");
+  $("tab-hist").onclick = () => { if (!run) showTab("hist"); else toast("Termine a contagem antes"); };
+  $("list").addEventListener("click", e => {
+    const b = e.target.closest("[data-del]"); if (!b || b._armed) return;
+    b._armed = true; armable(b, () => removeSession(b.dataset.del)); b.click();
+  });
+  $("add-via").onclick = () => {
+    const n = $("new-via").value.trim(); if (!n) return;
+    const ordem = vias.reduce((m, v) => Math.max(m, v.ordem ?? 0), 0) + 1;
+    const v = { id: uid(), nome: n, ordem }; $("new-via").value = "";
+    if (!vias.length) pref.via = v.id;
+    saveVia(v); toast("Via adicionada: " + n);
+  };
+  $("new-via").addEventListener("keydown", e => { if (e.key === "Enter") $("add-via").click(); });
+
+  let aggRows = [];
+  function csv() {
+    const head = "data;hora_inicio;via;duracao_s;carros;caminhoes;total;veic_h;pct_pesados";
+    const lines = sessoes.slice().sort((a, b) => a.inicio.localeCompare(b.inicio)).map(s =>
+      [ddmm(s.inicio) + "/" + new Date(s.inicio).getFullYear(), hhmm(s.inicio), `"${viaNome(s.viaId).replace(/"/g, "'")}"`, s.duracaoS, s.carros, s.caminhoes, s.carros + s.caminhoes, veicH(s), pctPes(s.carros, s.caminhoes)].join(";"));
+    return [head, ...lines].join("\n");
+  }
+  function resumo() {
+    return aggRows.map(g => `${g.hora.slice(8, 10)}/${g.hora.slice(5, 7)} ${g.hora.slice(11)} · ${viaNome(g.viaId)}: ${nf.format(Math.round((g.c + g.t) * 3600 / g.dur))} veíc/h · pes. ${pctPes(g.c, g.t)}% (${g.n} amostra${g.n > 1 ? "s" : ""}, ${g.c + g.t} veíc. em ${fmtClock(g.dur)})`).join("\n");
+  }
+  async function copy(text, label) {
+    const out = $("out"); out.textContent = text; out.hidden = false;
+    try { await navigator.clipboard.writeText(text); toast(label + " copiado"); }
+    catch { const r = document.createRange(); r.selectNodeContents(out); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); toast("Texto selecionado: copie manualmente"); }
+  }
+  // CSV fora do Claude: no celular abre o menu de compartilhar; no computador, baixa o arquivo.
+  const csvName = () => `contagens-${new Date().toISOString().slice(0, 10)}.csv`;
+  $("dl-csv").onclick = async () => {
+    const blob = new Blob(["\uFEFF" + csv()], { type: "text/csv;charset=utf-8" });
+    try {
+      const file = new File([blob], csvName(), { type: "text/csv" });
+      if (navigator.canShare && navigator.canShare({ files: [file] }) && matchMedia("(pointer: coarse)").matches) {
+        await navigator.share({ files: [file], title: "Contagens" }); return;
+      }
+    } catch (e) { if (e && e.name === "AbortError") return; }
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = csvName();
+    document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  };
+  $("copy-txt").onclick = () => copy(resumo() || "Sem contagens.", "Resumo");
+  $("copy-csv").onclick = () => copy(csv(), "CSV");
+
+  /* ---------- boot ---------- */
+  renderAll();
+
+  (async () => {
+    const claude = window.claude;
+    if (!claude || !claude.use) {
+      // Fora do Claude (PWA): dados no aparelho; pede ao navegador para não apagá-los e funciona offline.
+      status("Dados ficam neste aparelho");
+      try { navigator.storage?.persist?.(); } catch {}
+      if ("serviceWorker" in navigator && location.protocol !== "file:") navigator.serviceWorker.register("sw.js").catch(() => {});
+      return;
+    }
+    const [d, dl] = await Promise.all([claude.use("db").catch(() => null), claude.use("downloads").catch(() => null)]);
+    if (dl) {
+      $("dl-csv").onclick = async () => {
+        try { await dl.save({ filename: csvName(), data: "\uFEFF" + csv() }); }
+        catch (e) { if (e && e.code !== "cancelled") toast("Download não concluído"); }
+      };
+    }
+    if (!d) { status("Modo local: dados ficam neste aparelho"); return; }
+    db = d;
+    db.collection("vias").onSnapshot(snap => {
+      vias = snap.docs.map(x => x.data()).filter(Boolean); cacheLocal(); renderVias(); renderHist(); renderCounter();
+    }, () => status("Conexão perdida com a nuvem", "err"));
+    db.collection("contagens").orderBy("inicio", "desc").limit(1000).onSnapshot(snap => {
+      const remote = snap.docs.map(x => x.data()).filter(Boolean);
+      const pending = ls.get(LS.outbox, []).filter(p => !remote.some(r => r.id === p.id));
+      sessoes = remote.concat(pending); cacheLocal(); renderVias(); renderHist();
+    }, () => status("Conexão perdida com a nuvem", "err"));
+    flushOutbox();
+    window.addEventListener("online", flushOutbox);
+  })();
+})();
+</script>
+</body>
+</html>
