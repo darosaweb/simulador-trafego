@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ajuda — daRosa Tráfego</title>
+<style>
+  :root {
+    --framboesa: #cc3467; --rosa: #ff8ca1; --rosa-claro: #fecccb; --tinta: #231f20; --papel: #fff7f6;
+    --texto: #2c2427; --suave: #6b5a5e; --linha: #f0dcdc; --codigo: #fbeeee;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 16px; }
+  body {
+    margin: 0; background: #fff; color: var(--texto);
+    font: 16px/1.6 Inter, "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+  }
+  .layout { display: grid; grid-template-columns: 290px minmax(0, 1fr); min-height: 100vh; }
+  nav {
+    position: sticky; top: 0; height: 100vh; overflow-y: auto; background: var(--papel);
+    border-right: 1px solid var(--linha); border-top: 6px solid var(--framboesa); padding: 20px 18px 32px;
+  }
+  .marca { display: flex; align-items: center; gap: 10px; text-decoration: none; margin-bottom: 4px; }
+  .marca img { width: 44px; height: 44px; border: none; box-shadow: none; border-radius: 0; }
+  .marca span { font-size: 19px; color: var(--tinta); line-height: 1.15; }
+  .marca b { color: var(--framboesa); font-weight: 800; }
+  .sub { color: var(--suave); font-size: 13px; margin: 0 0 16px 54px; }
+  #busca {
+    width: 100%; padding: 9px 12px; border: 1px solid #e6c9cb; border-radius: 8px; font: inherit; font-size: 14px;
+    background: #fff; outline: none;
+  }
+  #busca:focus { border-color: var(--framboesa); box-shadow: 0 0 0 3px rgba(204, 52, 103, .15); }
+  #resultado { color: var(--suave); font-size: 12.5px; min-height: 18px; margin: 6px 2px 10px; }
+  nav a.sec {
+    display: block; padding: 6px 10px; border-radius: 6px; color: var(--texto); text-decoration: none; font-size: 14.5px;
+  }
+  nav a.sec:hover { background: #fde7e7; }
+  nav a.sec.ativa { background: var(--framboesa); color: #fff; }
+  nav a.sec.oculta { display: none; }
+  main { padding: 36px 56px 80px; max-width: 980px; }
+  header.intro h1 { font-size: 34px; line-height: 1.2; margin: 0 0 12px; color: var(--tinta); }
+  header.intro h1::after { content: ""; display: block; width: 64px; height: 5px; background: var(--framboesa); border-radius: 3px; margin-top: 12px; }
+  section { padding-top: 8px; }
+  section.oculta { display: none; }
+  h2 { font-size: 25px; margin: 40px 0 10px; color: var(--tinta); padding-bottom: 6px; border-bottom: 2px solid var(--rosa-claro); }
+  h3 { font-size: 19px; margin: 28px 0 8px; }
+  a { color: var(--framboesa); }
+  strong { color: var(--tinta); }
+  code { background: var(--codigo); padding: 1px 5px; border-radius: 4px; font-size: .9em; }
+  pre { background: var(--codigo); padding: 12px 14px; border-radius: 8px; overflow-x: auto; }
+  pre code { background: none; padding: 0; }
+  table { border-collapse: collapse; margin: 12px 0 18px; font-size: 15px; width: 100%; }
+  th, td { border-bottom: 1px solid var(--linha); padding: 7px 10px; text-align: left; vertical-align: top; }
+  th { background: var(--papel); color: var(--tinta); }
+  img { max-width: 100%; border-radius: 8px; border: 1px solid #e8dcdc; box-shadow: 0 2px 10px rgba(35, 31, 32, .08); }
+  p > img:only-child { display: block; margin: 14px 0 6px; }
+  mark { background: #ffe1a8; padding: 0 1px; border-radius: 2px; }
+  .vazio { color: var(--suave); display: none; margin-top: 40px; }
+  footer { color: var(--suave); font-size: 13px; margin-top: 56px; border-top: 1px solid var(--linha); padding-top: 14px; }
+  .menu { display: none; }
+
+  @media (max-width: 860px) {
+    .layout { grid-template-columns: 1fr; }
+    nav { position: static; height: auto; }
+    main { padding: 24px 18px 60px; }
+  }
+  @media print {
+    @page { margin: 18mm 16mm; }
+    body { font-size: 11pt; }
+    .layout { display: block; }
+    nav { display: none; }
+    main { padding: 0; max-width: none; }
+    section, section.oculta { display: block !important; }
+    h2 { break-before: page; break-after: avoid; }
+    h3, table, img, pre { break-inside: avoid; }
+    a { color: inherit; text-decoration: none; }
+    .capa { display: flex !important; }
+  }
+  .capa {
+    display: none; height: 245mm; flex-direction: column; align-items: center; justify-content: center; text-align: center;
+    border-top: 8px solid var(--framboesa);
+  }
+  .capa img { width: 60mm; height: 60mm; border: none; box-shadow: none; }
+  .capa .nome { font-size: 34pt; margin-top: 8mm; }
+  .capa .nome b { color: var(--framboesa); font-weight: 800; }
+  .capa .sub2 { color: var(--suave); font-size: 14pt; margin-top: 3mm; }
+  .capa .ver { color: var(--suave); font-size: 11pt; margin-top: 20mm; }
+</style>
+</head>
+<body>
+<div class="layout">
+  <nav>
+    <a class="marca" href="#"><img src="rosa.png" alt=""><span>daRosa <b>Tráfego</b></span></a>
+    <p class="sub">Ajuda · versão {{version}}</p>
+    <input id="busca" type="search" placeholder="Buscar na ajuda…" autocomplete="off">
+    <div id="resultado"></div>
+    <div id="sumario">
+{{toc}}
+    </div>
+  </nav>
+  <main>
+    <div class="capa">
+      <img src="rosa.png" alt="">
+      <div class="nome">daRosa <b>Tráfego</b></div>
+      <div class="sub2">Manual do usuário</div>
+      <div class="ver">Versão {{version}}</div>
+    </div>
+{{content}}
+    <p class="vazio" id="vazio">Nada encontrado. Tente outra palavra.</p>
+    <footer>daRosa Tráfego {{version}} · simulação com Eclipse SUMO</footer>
+  </main>
+</div>
+<script>
+(function () {
+  var links = Array.prototype.slice.call(document.querySelectorAll('#sumario a'));
+  links.forEach(function (a) { a.className = 'sec'; });
+  var sections = Array.prototype.slice.call(document.querySelectorAll('main section'));
+  var intro = document.querySelector('header.intro');
+  var originals = sections.map(function (s) { return s.innerHTML; });
+  var box = document.getElementById('busca');
+  var info = document.getElementById('resultado');
+  var empty = document.getElementById('vazio');
+
+  function norm(s) { return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(); }
+
+  // Destaca o termo só no texto, sem mexer nas tags.
+  function highlight(html, term) {
+    var div = document.createElement('div');
+    div.innerHTML = html;
+    var walker = document.createTreeWalker(div, NodeFilter.SHOW_TEXT, null);
+    var nodes = [];
+    while (walker.nextNode()) nodes.push(walker.currentNode);
+    var t = norm(term);
+    nodes.forEach(function (node) {
+      var text = node.nodeValue, n = norm(text), i = n.indexOf(t);
+      if (i < 0) return;
+      var frag = document.createDocumentFragment(), last = 0;
+      while (i >= 0) {
+        frag.appendChild(document.createTextNode(text.slice(last, i)));
+        var m = document.createElement('mark');
+        m.textContent = text.slice(i, i + t.length);
+        frag.appendChild(m);
+        last = i + t.length;
+        i = n.indexOf(t, last);
+      }
+      frag.appendChild(document.createTextNode(text.slice(last)));
+      node.parentNode.replaceChild(frag, node);
+    });
+    return div.innerHTML;
+  }
+
+  function search() {
+    var term = box.value.trim();
+    var found = 0;
+    sections.forEach(function (s, k) {
+      var link = links[k];
+      if (!term) {
+        s.innerHTML = originals[k];
+        s.classList.remove('oculta');
+        if (link) link.classList.remove('oculta');
+        return;
+      }
+      var hit = norm(s.textContent).indexOf(norm(term)) >= 0;
+      s.innerHTML = hit ? highlight(originals[k], term) : originals[k];
+      s.classList.toggle('oculta', !hit);
+      if (link) link.classList.toggle('oculta', !hit);
+      if (hit) found++;
+    });
+    if (intro) intro.style.display = term ? 'none' : '';
+    empty.style.display = term && !found ? 'block' : 'none';
+    info.textContent = term ? (found ? found + (found > 1 ? ' seções' : ' seção') + ' com “' + term + '”' : '') : '';
+  }
+  box.addEventListener('input', search);
+  box.addEventListener('keydown', function (e) { if (e.key === 'Escape') { box.value = ''; search(); } });
+
+  // Seção visível marcada no sumário.
+  function mark() {
+    var current = null;
+    sections.forEach(function (s, k) {
+      if (!s.classList.contains('oculta') && s.getBoundingClientRect().top < 120) current = k;
+    });
+    links.forEach(function (a, k) { a.classList.toggle('ativa', k === current); });
+  }
+  document.addEventListener('scroll', mark, { passive: true });
+  mark();
+})();
+</script>
+</body>
+</html>

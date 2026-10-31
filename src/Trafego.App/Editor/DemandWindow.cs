@@ -29,6 +29,7 @@ public sealed class DemandWindow : Window
     {
         _editor = editor;
         Title = "Demanda — " + Brand.Name;
+        Help.HelpPages.AttachF1(this, Help.HelpPages.Topic.Demand);
         Width = 1000;
         Height = 760;
         MinWidth = 700;

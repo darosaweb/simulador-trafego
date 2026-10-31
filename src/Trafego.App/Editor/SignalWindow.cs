@@ -29,6 +29,7 @@ public sealed class SignalWindow : Window
         _editor = editor;
         _controllerId = controllerId;
         Title = "Semáforos — " + Brand.Name;
+        Help.HelpPages.AttachF1(this, Help.HelpPages.Topic.Signals);
         Width = 1180;
         Height = 720;
         MinWidth = 820;

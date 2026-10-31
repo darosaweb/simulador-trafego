@@ -8,6 +8,7 @@ using Avalonia.Layout;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using Trafego.App.Editor;
+using Trafego.App.Help;
 using Trafego.Core.Geometry;
 using Trafego.Core.Model;
 using Trafego.Core.Results;
@@ -466,6 +467,12 @@ public partial class MainWindow : Window
                 case Key.N: OnNew(null, e); break;
                 default: return;
             }
+            e.Handled = true;
+            return;
+        }
+        if (e.Key == Key.F1)
+        {
+            ShowHelp(ContextTopic());
             e.Handled = true;
             return;
         }
@@ -1104,6 +1111,47 @@ public partial class MainWindow : Window
     private void OnFit(object? sender, RoutedEventArgs e) => MapCanvas.FitToContent();
 
     private async void OnAbout(object? sender, RoutedEventArgs e) => await new AboutWindow().ShowDialog(this);
+
+    // ---------------------------------------------------------------- ajuda
+
+    private void ShowHelp(string? topic)
+    {
+        if (HelpPages.Open(topic) is { } error) SetStatus(error);
+        else SetStatus("Ajuda aberta no navegador.");
+    }
+
+    /// <summary>Seção da Ajuda para o que está em uso agora: a simulação, o objeto selecionado ou a ferramenta.</summary>
+    private string ContextTopic()
+    {
+        if (_sim.Active) return HelpPages.Topic.Simulation;
+        if (_editor.SelectedLink is not null) return HelpPages.Topic.Links;
+        if (_editor.SelectedConnector is not null) return HelpPages.Topic.Connectors;
+        if (_editor.SelectedInput is not null) return HelpPages.Topic.Demand;
+        if (_editor.SelectedConflictInfo is not null || _editor.SelectedJunction is not null) return HelpPages.Topic.Conflicts;
+        if (_editor.SelectedMeasurement is not null) return HelpPages.Topic.Measurements;
+        return _editor.Tool switch
+        {
+            Tool.Link => HelpPages.Topic.Links,
+            Tool.Connector => HelpPages.Topic.Connectors,
+            Tool.Input => HelpPages.Topic.Demand,
+            Tool.Measure => HelpPages.Topic.Measurements,
+            Tool.Calibrate => HelpPages.Topic.Photo,
+            _ => HelpPages.Topic.Screen,
+        };
+    }
+
+    private void OnHelp(object? sender, RoutedEventArgs e) => ShowHelp(null);
+
+    private void OnHelpPdf(object? sender, RoutedEventArgs e)
+    {
+        var pdf = Path.Combine(AppContext.BaseDirectory, "ajuda", "Manual-daRosa-Trafego.pdf");
+        if (File.Exists(pdf)) Process.Start(new ProcessStartInfo(pdf) { UseShellExecute = true });
+        else SetStatus("O manual em PDF não está instalado. Use Ajuda → Manual (F1).");
+    }
+
+    /// <summary>Itens do menu Ajuda e botões "?" dos painéis: o assunto vem no Tag.</summary>
+    private void OnHelpTopic(object? sender, RoutedEventArgs e) =>
+        ShowHelp((sender as Control)?.Tag as string);
 
     // ---------------------------------------------------------------- arquivos
 

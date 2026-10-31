@@ -38,6 +38,7 @@ public sealed class ResultsWindow : Window
         _editor = editor;
         _folder = folder;
         Title = "Resultados — " + Brand.Name;
+        Help.HelpPages.AttachF1(this, Help.HelpPages.Topic.Results);
         Width = 1100;
         Height = 760;
         MinWidth = 760;
@@ -276,7 +277,8 @@ public sealed class ResultsWindow : Window
     {
         if (!double.IsFinite(reference) || !double.IsFinite(value)) return "—";
         var diff = value - reference;
-        var pct = Math.Abs(reference) > 1e-9 ? $" ({diff / Math.Abs(reference):+0%;-0%;0%})" : "";
+        // Referência que aparece como 0,0 na tabela: a porcentagem não diz nada (daria +800000%).
+        var pct = Math.Abs(reference) >= 0.05 ? $" ({diff / Math.Abs(reference):+0%;-0%;0%})" : "";
         return diff.ToString("+0.0;-0.0;0", Pt) + pct;
     }
 

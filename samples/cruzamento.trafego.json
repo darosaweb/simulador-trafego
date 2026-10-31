@@ -1,0 +1,512 @@
+{
+  "format": 2,
+  "background": {
+    "imagePath": "local-com-regua.png",
+    "metersPerPixel": 0.6239489295668138,
+    "origin": {
+      "x": 0,
+      "y": 0,
+      "length": 0
+    }
+  },
+  "calibration": {
+    "a": {
+      "x": 746,
+      "y": 160,
+      "length": 762.9652678857668
+    },
+    "b": {
+      "x": 161,
+      "y": 259,
+      "length": 304.9622927510875
+    },
+    "meters": 370.2
+  },
+  "scenarios": [
+    {
+      "name": "Atual",
+      "network": {
+        "links": [
+          {
+            "id": 1,
+            "name": "Av. Oeste (aproxima\u00E7\u00E3o)",
+            "points": [
+              {
+                "x": 346.29165590958166,
+                "y": 216.5102785596844,
+                "length": 408.4049603942051
+              },
+              {
+                "x": 420.5415785280325,
+                "y": 216.5102785596844,
+                "length": 473.0030866631226
+              }
+            ],
+            "smooth": false,
+            "lanes": [
+              {
+                "width": 3.5
+              },
+              {
+                "width": 3.5
+              }
+            ],
+            "speedKmh": 60
+          },
+          {
+            "id": 2,
+            "name": "Av. Oeste (sa\u00EDda leste)",
+            "points": [
+              {
+                "x": 441.75584213330416,
+                "y": 216.5102785596844,
+                "length": 491.9602878087792
+              },
+              {
+                "x": 502.2788883012851,
+                "y": 216.5102785596844,
+                "length": 546.9559235945497
+              }
+            ],
+            "smooth": false,
+            "lanes": [
+              {
+                "width": 3.5
+              },
+              {
+                "width": 3.5
+              }
+            ],
+            "speedKmh": 60
+          },
+          {
+            "id": 3,
+            "name": "Rua Sul (aproxima\u00E7\u00E3o)",
+            "points": [
+              {
+                "x": 430.5247614011015,
+                "y": 267.0501418545963,
+                "length": 506.6234779834383
+              },
+              {
+                "x": 430.5247614011015,
+                "y": 225.8695125031866,
+                "length": 486.177546641042
+              }
+            ],
+            "smooth": false,
+            "lanes": [
+              {
+                "width": 3.5
+              }
+            ],
+            "speedKmh": 60
+          },
+          {
+            "id": 4,
+            "name": "Rua Sul (sa\u00EDda norte)",
+            "points": [
+              {
+                "x": 430.5247614011015,
+                "y": 205.90314675704855,
+                "length": 477.229165101977
+              },
+              {
+                "x": 430.5247614011015,
+                "y": 176.57754706740832,
+                "length": 465.3291311618242
+              }
+            ],
+            "smooth": false,
+            "lanes": [
+              {
+                "width": 3.5
+              }
+            ],
+            "speedKmh": 60
+          }
+        ],
+        "connectors": [
+          {
+            "id": 5,
+            "name": "Oeste \u2192 Leste",
+            "fromLinkId": 1,
+            "fromLane": 0,
+            "fromS": 74.24992261845085,
+            "toLinkId": 2,
+            "toLane": 0,
+            "toS": 0,
+            "laneCount": 2,
+            "points": [],
+            "signal": null,
+            "splitPercent": null,
+            "splitPercentTruck": null
+          },
+          {
+            "id": 6,
+            "name": "Sul \u2192 Norte",
+            "fromLinkId": 3,
+            "fromLane": 0,
+            "fromS": 41.18062935140969,
+            "toLinkId": 4,
+            "toLane": 0,
+            "toS": 0,
+            "laneCount": 1,
+            "points": [],
+            "signal": null,
+            "splitPercent": null,
+            "splitPercentTruck": null
+          },
+          {
+            "id": 7,
+            "name": "Sul \u2192 Leste",
+            "fromLinkId": 3,
+            "fromLane": 0,
+            "fromS": 41.18062935140969,
+            "toLinkId": 2,
+            "toLane": 0,
+            "toS": 0,
+            "laneCount": 1,
+            "points": [],
+            "signal": null,
+            "splitPercent": null,
+            "splitPercentTruck": null
+          }
+        ],
+        "inputs": [
+          {
+            "id": 8,
+            "name": "Entrada oeste",
+            "linkId": 1,
+            "volumeVph": 1100,
+            "volumes": [],
+            "truckShare": 0.08
+          },
+          {
+            "id": 9,
+            "name": "Entrada sul",
+            "linkId": 3,
+            "volumeVph": 450,
+            "volumes": [],
+            "truckShare": 0.1
+          }
+        ],
+        "conflictRules": [],
+        "junctions": [],
+        "signalControllers": [],
+        "demand": {
+          "sliceStarts": [
+            0
+          ],
+          "matrix": [],
+          "routeChoices": []
+        },
+        "measurements": [
+          {
+            "id": 10,
+            "name": "Fila oeste",
+            "kind": 1,
+            "linkId": 1,
+            "s": 72.24992261845085,
+            "toLinkId": 1,
+            "toS": 72.24992261845085,
+            "queueLength": 150
+          },
+          {
+            "id": 11,
+            "name": "Fila sul",
+            "kind": 1,
+            "linkId": 3,
+            "s": 39.18062935140969,
+            "toLinkId": 3,
+            "toS": 39.18062935140969,
+            "queueLength": 150
+          },
+          {
+            "id": 12,
+            "name": "Tempo oeste \u2192 leste",
+            "kind": 2,
+            "linkId": 1,
+            "s": 5,
+            "toLinkId": 2,
+            "toS": 55.523046167980965,
+            "queueLength": 150
+          }
+        ],
+        "nextId": 13
+      }
+    },
+    {
+      "name": "Proposta sem\u00E1foro",
+      "network": {
+        "links": [
+          {
+            "id": 1,
+            "name": "Av. Oeste (aproxima\u00E7\u00E3o)",
+            "points": [
+              {
+                "x": 346.29165590958166,
+                "y": 216.5102785596844,
+                "length": 408.4049603942051
+              },
+              {
+                "x": 420.5415785280325,
+                "y": 216.5102785596844,
+                "length": 473.0030866631226
+              }
+            ],
+            "smooth": false,
+            "lanes": [
+              {
+                "width": 3.5
+              },
+              {
+                "width": 3.5
+              }
+            ],
+            "speedKmh": 60
+          },
+          {
+            "id": 2,
+            "name": "Av. Oeste (sa\u00EDda leste)",
+            "points": [
+              {
+                "x": 441.75584213330416,
+                "y": 216.5102785596844,
+                "length": 491.9602878087792
+              },
+              {
+                "x": 502.2788883012851,
+                "y": 216.5102785596844,
+                "length": 546.9559235945497
+              }
+            ],
+            "smooth": false,
+            "lanes": [
+              {
+                "width": 3.5
+              },
+              {
+                "width": 3.5
+              }
+            ],
+            "speedKmh": 60
+          },
+          {
+            "id": 3,
+            "name": "Rua Sul (aproxima\u00E7\u00E3o)",
+            "points": [
+              {
+                "x": 430.5247614011015,
+                "y": 267.0501418545963,
+                "length": 506.6234779834383
+              },
+              {
+                "x": 430.5247614011015,
+                "y": 225.8695125031866,
+                "length": 486.177546641042
+              }
+            ],
+            "smooth": false,
+            "lanes": [
+              {
+                "width": 3.5
+              }
+            ],
+            "speedKmh": 60
+          },
+          {
+            "id": 4,
+            "name": "Rua Sul (sa\u00EDda norte)",
+            "points": [
+              {
+                "x": 430.5247614011015,
+                "y": 205.90314675704855,
+                "length": 477.229165101977
+              },
+              {
+                "x": 430.5247614011015,
+                "y": 176.57754706740832,
+                "length": 465.3291311618242
+              }
+            ],
+            "smooth": false,
+            "lanes": [
+              {
+                "width": 3.5
+              }
+            ],
+            "speedKmh": 60
+          }
+        ],
+        "connectors": [
+          {
+            "id": 5,
+            "name": "Oeste \u2192 Leste",
+            "fromLinkId": 1,
+            "fromLane": 0,
+            "fromS": 74.24992261845085,
+            "toLinkId": 2,
+            "toLane": 0,
+            "toS": 0,
+            "laneCount": 2,
+            "points": [],
+            "signal": {
+              "controllerId": 13,
+              "groupId": 1
+            },
+            "splitPercent": null,
+            "splitPercentTruck": null
+          },
+          {
+            "id": 6,
+            "name": "Sul \u2192 Norte",
+            "fromLinkId": 3,
+            "fromLane": 0,
+            "fromS": 41.18062935140969,
+            "toLinkId": 4,
+            "toLane": 0,
+            "toS": 0,
+            "laneCount": 1,
+            "points": [],
+            "signal": {
+              "controllerId": 13,
+              "groupId": 2
+            },
+            "splitPercent": null,
+            "splitPercentTruck": null
+          },
+          {
+            "id": 7,
+            "name": "Sul \u2192 Leste",
+            "fromLinkId": 3,
+            "fromLane": 0,
+            "fromS": 41.18062935140969,
+            "toLinkId": 2,
+            "toLane": 0,
+            "toS": 0,
+            "laneCount": 1,
+            "points": [],
+            "signal": {
+              "controllerId": 13,
+              "groupId": 2
+            },
+            "splitPercent": null,
+            "splitPercentTruck": null
+          }
+        ],
+        "inputs": [
+          {
+            "id": 8,
+            "name": "Entrada oeste",
+            "linkId": 1,
+            "volumeVph": 1100,
+            "volumes": [],
+            "truckShare": 0.08
+          },
+          {
+            "id": 9,
+            "name": "Entrada sul",
+            "linkId": 3,
+            "volumeVph": 450,
+            "volumes": [],
+            "truckShare": 0.1
+          }
+        ],
+        "conflictRules": [],
+        "junctions": [],
+        "signalControllers": [
+          {
+            "id": 13,
+            "name": "Cruzamento",
+            "groups": [
+              {
+                "id": 1,
+                "name": "Grupo 1",
+                "permissive": false
+              },
+              {
+                "id": 2,
+                "name": "Grupo 2",
+                "permissive": false
+              }
+            ],
+            "plans": [
+              {
+                "id": 1,
+                "name": "Plano 1",
+                "cycle": 90,
+                "offset": 0,
+                "timings": [
+                  {
+                    "groupId": 1,
+                    "greenStart": 0,
+                    "greenEnd": 40,
+                    "amber": 3
+                  },
+                  {
+                    "groupId": 2,
+                    "greenStart": 45,
+                    "greenEnd": 85,
+                    "amber": 3
+                  }
+                ]
+              }
+            ],
+            "schedule": []
+          }
+        ],
+        "demand": {
+          "sliceStarts": [
+            0
+          ],
+          "matrix": [],
+          "routeChoices": []
+        },
+        "measurements": [
+          {
+            "id": 10,
+            "name": "Fila oeste",
+            "kind": 1,
+            "linkId": 1,
+            "s": 72.24992261845085,
+            "toLinkId": 1,
+            "toS": 72.24992261845085,
+            "queueLength": 150
+          },
+          {
+            "id": 11,
+            "name": "Fila sul",
+            "kind": 1,
+            "linkId": 3,
+            "s": 39.18062935140969,
+            "toLinkId": 3,
+            "toS": 39.18062935140969,
+            "queueLength": 150
+          },
+          {
+            "id": 12,
+            "name": "Tempo oeste \u2192 leste",
+            "kind": 2,
+            "linkId": 1,
+            "s": 5,
+            "toLinkId": 2,
+            "toS": 55.523046167980965,
+            "queueLength": 150
+          }
+        ],
+        "nextId": 14
+      }
+    }
+  ],
+  "activeScenario": 0,
+  "simulation": {
+    "startTimeOfDay": 25200,
+    "durationMinutes": 30,
+    "resultIntervalMinutes": 15,
+    "replications": 3,
+    "seed": 1,
+    "begin": 25200,
+    "end": 27000
+  }
+}

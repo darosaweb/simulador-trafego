@@ -17,6 +17,11 @@ régua de 370,20 m) é aberto por Arquivo → Abrir.
 **Como usar: veja o [Manual](docs/MANUAL.md)**, com um passo a passo do primeiro cenário (cruzamento com
 semáforo) e todas as ferramentas.
 
+O manual é também a **Ajuda do programa** (F1, menu Ajuda e botões "?" dos painéis): na primeira vez que é
+aberta, vira uma página HTML com sumário e busca, aberta no navegador na seção do que está em uso. As figuras
+ficam em `docs/img` e mostram o exemplo `samples/cruzamento.trafego.json`. O PDF
+(`docs/Manual-daRosa-Trafego.pdf`) é gerado com `build/gerar-manual-pdf.ps1`, depois de compilar.
+
 Planejamento da distribuição pública (instalador, licenças): [docs/DISTRIBUICAO.md](docs/DISTRIBUICAO.md).
 Marca (logo, cores, ícone): [docs/MARCA.md](docs/MARCA.md).
 

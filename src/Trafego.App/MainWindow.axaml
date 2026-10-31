@@ -43,6 +43,31 @@
     <Style Selector="Border.notice.active">
       <Setter Property="Background" Value="#3a2440" />
     </Style>
+    <!-- "?" no título de cada painel: abre a seção da Ajuda sobre ele. -->
+    <Style Selector="Button.help">
+      <Setter Property="Content" Value="?" />
+      <Setter Property="Width" Value="20" />
+      <Setter Property="Height" Value="20" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="FontSize" Value="11" />
+      <Setter Property="FontWeight" Value="Bold" />
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="Margin" Value="0,6,0,0" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+      <Setter Property="Foreground" Value="#9aa4b2" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="#3a414b" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="ToolTip.Tip" Value="Ajuda sobre este painel (F1)" />
+    </Style>
+    <Style Selector="Button.help:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="#CC3467" />
+      <Setter Property="BorderBrush" Value="#CC3467" />
+      <Setter Property="Foreground" Value="White" />
+    </Style>
     <Style Selector="ToggleButton.tool">
       <Setter Property="Padding" Value="10,4" />
     </Style>
@@ -84,6 +109,12 @@
         <MenuItem Header="_Ajustar à tela" InputGesture="F" Click="OnFit" />
       </MenuItem>
       <MenuItem Header="Aj_uda">
+        <MenuItem Header="_Manual" InputGesture="F1" Click="OnHelp" />
+        <MenuItem Header="_Primeiros passos" Tag="seu-primeiro-cenário" Click="OnHelpTopic" />
+        <MenuItem Header="_Atalhos de teclado" Tag="atalhos-de-teclado" Click="OnHelpTopic" />
+        <MenuItem Header="Problemas _comuns" Tag="problemas-comuns" Click="OnHelpTopic" />
+        <MenuItem Header="Manual em P_DF" Click="OnHelpPdf" />
+        <Separator />
         <MenuItem Header="_Sobre o daRosa Tráfego…" Click="OnAbout" />
       </MenuItem>
     </Menu>
@@ -166,7 +197,7 @@
         <StackPanel Margin="12,4,18,12">
 
           <StackPanel x:Name="SimPanel" IsVisible="False" Margin="0,0,0,8">
-            <TextBlock Classes="h" Text="SIMULAÇÃO (SUMO)" />
+            <Grid ColumnDefinitions="*,Auto"><TextBlock Classes="h" Text="SIMULAÇÃO (SUMO)" /><Button Grid.Column="1" Classes="help" Tag="simulando" Click="OnHelpTopic" /></Grid>
             <TextBlock x:Name="SimStats" Classes="muted" FontFamily="Consolas,monospace" />
             <TextBlock x:Name="SimWarnings" Classes="muted" Margin="0,8,0,0" Foreground="#e8b04a" />
             <StackPanel x:Name="SimNotices" Margin="0,8,0,0" />
@@ -175,7 +206,7 @@
           </StackPanel>
 
           <StackPanel x:Name="MeasurePanel" IsVisible="False">
-            <TextBlock x:Name="MeasureTitle" Classes="h" Text="MEDIÇÃO" />
+            <Grid ColumnDefinitions="*,Auto"><TextBlock x:Name="MeasureTitle" Classes="h" Text="MEDIÇÃO" /><Button Grid.Column="1" Classes="help" Tag="medições" Click="OnHelpTopic" /></Grid>
             <Grid Classes="form" ColumnDefinitions="110,*" RowDefinitions="Auto,Auto">
               <TextBlock Classes="label" Text="Nome" />
               <TextBox x:Name="MeasureName" Grid.Column="1" LostFocus="OnMeasureNameCommit" KeyDown="OnNameKeyDown" />
@@ -188,7 +219,7 @@
           </StackPanel>
 
           <StackPanel x:Name="InputPanel" IsVisible="False">
-            <TextBlock Classes="h" Text="ENTRADA DE VEÍCULOS" />
+            <Grid ColumnDefinitions="*,Auto"><TextBlock Classes="h" Text="ENTRADA DE VEÍCULOS" /><Button Grid.Column="1" Classes="help" Tag="gerando-tráfego" Click="OnHelpTopic" /></Grid>
             <Grid Classes="form" ColumnDefinitions="110,*" RowDefinitions="Auto,Auto,Auto">
               <TextBlock Classes="label" Text="Nome" />
               <TextBox x:Name="InputName" Grid.Column="1" LostFocus="OnInputNameCommit" KeyDown="OnNameKeyDown" />
@@ -202,7 +233,7 @@
           </StackPanel>
 
           <StackPanel x:Name="ConflictPanel" IsVisible="False">
-            <TextBlock Classes="h" Text="CONFLITO" />
+            <Grid ColumnDefinitions="*,Auto"><TextBlock Classes="h" Text="CONFLITO" /><Button Grid.Column="1" Classes="help" Tag="nós-e-conflitos" Click="OnHelpTopic" /></Grid>
             <TextBlock x:Name="ConflictInfo" Classes="muted" />
             <TextBlock Classes="h" Text="QUEM TEM PREFERÊNCIA?" />
             <StackPanel Spacing="4">
@@ -217,7 +248,7 @@
           </StackPanel>
 
           <StackPanel x:Name="JunctionPanel" IsVisible="False">
-            <TextBlock x:Name="JunctionTitle" Classes="h" Text="NÓ" />
+            <Grid ColumnDefinitions="*,Auto"><TextBlock x:Name="JunctionTitle" Classes="h" Text="NÓ" /><Button Grid.Column="1" Classes="help" Tag="nós-e-conflitos" Click="OnHelpTopic" /></Grid>
             <TextBlock Classes="label" Text="Controle" Margin="0,0,0,4" />
             <ComboBox x:Name="JunctionControlBox" HorizontalAlignment="Stretch" SelectionChanged="OnJunctionControlChanged">
               <ComboBoxItem Content="Via preferencial (regras de conflito)" />
@@ -228,7 +259,7 @@
           </StackPanel>
 
           <StackPanel x:Name="LinkPanel" IsVisible="False">
-            <TextBlock Classes="h" Text="LINK" />
+            <Grid ColumnDefinitions="*,Auto"><TextBlock Classes="h" Text="LINK" /><Button Grid.Column="1" Classes="help" Tag="links" Click="OnHelpTopic" /></Grid>
             <Grid Classes="form" ColumnDefinitions="110,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto">
               <TextBlock Classes="label" Text="Nome" />
               <TextBox x:Name="LinkName" Grid.Column="1" LostFocus="OnLinkNameCommit" KeyDown="OnNameKeyDown" />
@@ -255,7 +286,7 @@
           </StackPanel>
 
           <StackPanel x:Name="ConnectorPanel" IsVisible="False">
-            <TextBlock Classes="h" Text="CONECTOR" />
+            <Grid ColumnDefinitions="*,Auto"><TextBlock Classes="h" Text="CONECTOR" /><Button Grid.Column="1" Classes="help" Tag="conectores" Click="OnHelpTopic" /></Grid>
             <Grid Classes="form" ColumnDefinitions="110,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
               <TextBlock Classes="label" Text="Nome" />
               <TextBox x:Name="ConnName" Grid.Column="1" LostFocus="OnConnNameCommit" KeyDown="OnNameKeyDown" />
@@ -287,7 +318,7 @@
                              FormatString="0.#" ValueChanged="OnConnSplitTruckChanged" />
             </Grid>
             <TextBlock x:Name="ConnSplitInfo" Classes="muted" Margin="0,4,0,0" />
-            <TextBlock Classes="h" Text="SEMÁFORO" />
+            <Grid ColumnDefinitions="*,Auto"><TextBlock Classes="h" Text="SEMÁFORO" /><Button Grid.Column="1" Classes="help" Tag="semáforos" Click="OnHelpTopic" /></Grid>
             <Grid Classes="form" ColumnDefinitions="110,*" RowDefinitions="Auto,Auto">
               <TextBlock Classes="label" Text="Controlador" />
               <ComboBox x:Name="ConnSignal" Grid.Column="1" HorizontalAlignment="Stretch" Margin="0,2" SelectionChanged="OnConnSignalChanged" />
@@ -302,7 +333,7 @@
           </StackPanel>
 
           <StackPanel x:Name="NetworkPanel">
-            <TextBlock Classes="h" Text="CENÁRIO" />
+            <Grid ColumnDefinitions="*,Auto"><TextBlock Classes="h" Text="CENÁRIO" /><Button Grid.Column="1" Classes="help" Tag="comparando-cenários" Click="OnHelpTopic" /></Grid>
             <Grid Classes="form" ColumnDefinitions="110,*" RowDefinitions="Auto,Auto">
               <TextBlock Classes="label" Text="Nome" />
               <TextBox x:Name="ScenarioName" Grid.Column="1" LostFocus="OnScenarioNameCommit" KeyDown="OnNameKeyDown" />
@@ -318,7 +349,7 @@
             </WrapPanel>
             <TextBlock Classes="h" Text="REDE" />
             <TextBlock x:Name="NetworkInfo" Classes="muted" />
-            <TextBlock Classes="h" Text="VERIFICAÇÃO" />
+            <Grid ColumnDefinitions="*,Auto"><TextBlock Classes="h" Text="VERIFICAÇÃO" /><Button Grid.Column="1" Classes="help" Tag="problemas-comuns" Click="OnHelpTopic" /></Grid>
             <StackPanel x:Name="IssuesList" />
             <TextBlock Classes="h" Text="COMO USAR" />
             <TextBlock Classes="muted" xml:space="preserve">• Roda do mouse: zoom. Botão do meio ou Espaço + arrastar: mover a vista.

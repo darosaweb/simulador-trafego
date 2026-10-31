@@ -32,21 +32,24 @@ usando o **SUMO** como motor. No fim, mede e compara cenários — por exemplo, 
 
 **Precisa ter instalado:**
 
-- **.NET 8 SDK** (ou mais novo).
-- **Eclipse SUMO**, com a variável de ambiente `SUMO_HOME` apontando para a pasta de instalação
-  (o instalador do SUMO para Windows já faz isso). Sem o SUMO, o editor abre, mas não simula.
+- **Windows 10 ou 11**.
+- **Eclipse SUMO** (gratuito, [eclipse.dev/sumo](https://eclipse.dev/sumo/)), o motor que simula os veículos.
+  O instalador do SUMO para Windows já cria a variável `SUMO_HOME`, que o programa usa para encontrá-lo.
+  Sem o SUMO, o editor abre, mas não simula.
 - **FFmpeg** (opcional), só para exportar vídeo: `winget install Gyan.FFmpeg`.
 
-**Para abrir o programa**, na pasta do projeto:
+**Para abrir o programa**, use o atalho **daRosa Tráfego**. Ele abre com um projeto vazio. Na pasta
+`samples`, ao lado do programa, há dois exemplos para abrir em **Arquivo → Abrir**:
 
-```
-dotnet run --project src/Trafego.App
-```
+- `exemplo.trafego.json`: só a foto de um viaduto com alças, já calibrada, para você desenhar (é a base do
+  passo a passo da seção 2);
+- `cruzamento.trafego.json`: um cruzamento pronto, com dois cenários (a situação atual, com preferência, e
+  uma proposta com semáforo), entradas e medições. É o das figuras deste manual.
 
-Depois da primeira vez, dá para abrir direto `src/Trafego.App/bin/Debug/net8.0/Trafego.exe`.
-
-O programa abre com um projeto vazio. Há um exemplo pronto — uma foto de um viaduto com alças, já
-calibrada — em **Arquivo → Abrir**, na pasta `samples` ao lado do programa (`exemplo.trafego.json`).
+**Ajuda**: aperte **F1** a qualquer momento. A ajuda abre no navegador, já na seção do que você está usando
+(a ferramenta ativa ou o objeto selecionado). Os botões **?** nos títulos do painel da direita fazem o mesmo.
+No menu **Ajuda** ficam também os primeiros passos, os atalhos de teclado, os problemas comuns e este manual
+em **PDF**, para imprimir. A busca, no alto do sumário, procura em todo o manual.
 
 ---
 
@@ -99,6 +102,8 @@ Deixe uns 10 a 20 m de espaço entre o fim das aproximações e o começo das sa
 ---
 
 ## 3. A tela
+
+![A tela do programa com o exemplo do cruzamento aberto](img/tela.jpg)
 
 - **Barra de ferramentas** (em cima): ferramentas de edição, padrões para novos links, controles da
   simulação e da avaliação.
@@ -177,6 +182,8 @@ entre si; nos cruzamentos, as conversões à esquerda cruzam o sentido oposto e 
 
 As faixas são numeradas a partir da **direita** (faixa 1 = a da direita, no sentido do tráfego).
 
+![Link selecionado: os pontos aparecem e o painel mostra faixas, largura e velocidade](img/link.jpg)
+
 ---
 
 ## 6. Conectores: as ligações entre vias
@@ -198,6 +205,8 @@ entradas e saídas de rotatória e a continuação de uma via depois de um cruza
 - Arraste as **bolinhas** nas pontas para mover a saída ou a chegada ao longo do link.
 - **Duplo clique** sobre o conector insere um ponto intermediário (para curvar); botão direito apaga;
   **Remover curvas** volta à curva automática.
+
+![Conector selecionado: faixas ligadas, divisão do tráfego e semáforo no painel](img/conector.jpg)
 
 **Dica**: num cruzamento, à moda do Vissim, as aproximações terminam antes do cruzamento e **cada movimento**
 (seguir em frente, virar à direita, virar à esquerda) é um conector.
@@ -226,6 +235,8 @@ O programa encontra sozinho onde os movimentos se encontram:
 *Automático*, *A tem preferência*, *B tem preferência* ou *Sem conflito (níveis diferentes)* — esta última para
 viadutos e passagens inferiores.
 
+![Conflito selecionado no Nó 5: escolha de quem tem preferência](img/conflito.jpg)
+
 **Controle do nó**: clique no rótulo **"Nó N"** e escolha:
 
 - **Via preferencial** (padrão): vale o que foi definido nos conflitos;
@@ -240,6 +251,8 @@ nível, termine os links antes do cruzamento e ligue os movimentos por conectore
 ## 8. Semáforos
 
 **Menu Rede → Semáforos…** abre o editor de controladores (tempo fixo).
+
+![Editor de semáforos: grupos, plano com o diagrama do ciclo e tabela de horários](img/semaforos.png)
 
 - **Grupos semafóricos**: movimentos que abrem juntos.
   - Marque **Verde permitido** quando o movimento anda no verde, mas cede a passagem a quem cruza
@@ -307,6 +320,8 @@ rodovia por onde passam 60% dos veículos, ponha 60 no conector da saída; os 40
   **participação** (%) de cada um. Sem participação, todos vão pelo mais rápido. **Ver** destaca a rota em
   laranja no mapa.
 
+![Janela de demanda: intervalos, volume por entrada e matriz O/D](img/demanda.png)
+
 ---
 
 ## 10. Simulando
@@ -321,6 +336,8 @@ Na barra de ferramentas:
 
 Durante a simulação, a rede fica **só para leitura**: dá para mover a vista e dar zoom, mas não editar.
 O painel mostra o relógio, os veículos na rede, os parados, quantos entraram e saíram e a velocidade média.
+
+![Simulação rodando com semáforo: os carros da aproximação oeste esperam o verde](img/simulacao.jpg)
 
 Logo abaixo vêm os **avisos do SUMO** sobre a rede gerada. Os ids internos do SUMO (como `L127_0_1` ou `J140`)
 aparecem com os nomes do editor ("faixa 2 de Link 127", "Nó 140"), e os avisos mais comuns vêm explicados em
@@ -391,6 +408,8 @@ Clicar de novo durante a avaliação cancela.
   vias (verde na velocidade máxima, amarelo pela metade, vermelho parado) — ótimo para achar gargalos.
 - **Comparar**: veja a próxima seção.
 
+![Resultados de uma avaliação, aba Rede: média, desvio-padrão e cada semente](img/resultados.png)
+
 **Exportar CSV…** gera uma planilha (ponto e vírgula e vírgula decimal, abre direto no Excel).
 
 Os resultados ficam guardados na pasta `<projeto>.resultados/`, ao lado do arquivo do projeto.
@@ -423,6 +442,8 @@ no mapa, o painel da direita mostra o nome dele e os botões para gerenciar os c
    ver o que mudou. Escolha qual cenário aparece em **Comparar com** ("Nenhum" desliga).
 4. Ajuste a demanda da proposta em **Rede → Demanda**, se as vias que geram tráfego mudaram.
 
+![Cenário "Proposta semáforo" em edição, comparando com o "Atual" (contorno amarelo)](img/cenarios.jpg)
+
 **Para juntar projetos que você já tem em arquivos separados:** abra um deles e use **Importar…** (ou
 **Cenários → Importar de outro projeto…**) para trazer o outro. Pode escolher vários arquivos de uma vez.
 
@@ -441,6 +462,8 @@ referência. As colunas **Δ** mostram a diferença e a porcentagem, em **verde*
 quando piora. As medições se comparam pelo **nome**: dê o mesmo nome à medição equivalente em cada cenário
 (quem duplica já sai com os mesmos nomes).
 
+![Comparação Atual × Proposta semáforo: em verde o que melhorou, em vermelho o que piorou](img/comparar.png)
+
 Na aba **Comparar** você também pode marcar quaisquer resultados, inclusive de outros projetos (**Abrir de
 outro projeto…**). O mais antigo marcado é a referência.
 
@@ -452,6 +475,7 @@ Com poucas replicações, diferenças menores que o desvio-padrão podem ser só
 
 | Atalho | Ação |
 |---|---|
+| F1 | ajuda sobre o que está em uso |
 | V, L, C, E, M, K | ferramentas (Selecionar, Link, Conector, Entrada, Medição, Calibrar) |
 | F | enquadrar a foto |
 | Esc | cancelar / voltar para Selecionar / tirar a seleção |

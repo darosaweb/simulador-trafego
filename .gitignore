@@ -484,3 +484,8 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# Arquivos gerados pelo programa ao lado dos projetos (cenário SUMO e resultados)
+*.sumo/
+*.resultados/
+

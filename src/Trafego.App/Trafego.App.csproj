@@ -20,10 +20,20 @@
     <PackageReference Include="Avalonia.Desktop" Version="11.3.22" />
     <PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.22" />
     <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.22" />
+    <PackageReference Include="Markdig" Version="0.37.0" />
   </ItemGroup>
 
   <ItemGroup>
     <AvaloniaResource Include="Assets\**" />
+    <EmbeddedResource Include="Help\ajuda.html" LogicalName="Trafego.App.Help.ajuda.html" />
+  </ItemGroup>
+
+  <!-- A Ajuda é gerada do manual (docs/MANUAL.md) na primeira vez que é aberta: o manual e as imagens vão junto. -->
+  <ItemGroup>
+    <None Include="..\..\docs\MANUAL.md" Link="ajuda\MANUAL.md" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\docs\img\**" LinkBase="ajuda\img" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="Assets\rosa.png" Link="ajuda\rosa.png" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\docs\Manual-daRosa-Trafego.pdf" Link="ajuda\Manual-daRosa-Trafego.pdf" CopyToOutputDirectory="PreserveNewest" Condition="Exists('..\..\docs\Manual-daRosa-Trafego.pdf')" />
   </ItemGroup>
 
   <ItemGroup>
@@ -32,7 +42,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="..\..\samples\**" LinkBase="samples" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\samples\*.json;..\..\samples\*.png" LinkBase="samples" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

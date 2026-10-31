@@ -46,6 +46,7 @@ public sealed class VideoWindow : Window
         _scenarioDirectory = scenarioDirectory;
         _suggestedName = suggestedName;
         Title = "Exportar vídeo — " + Brand.Name;
+        Help.HelpPages.AttachF1(this, Help.HelpPages.Topic.Simulation);
         Width = 560;
         SizeToContent = SizeToContent.Height;
         CanResize = false;
