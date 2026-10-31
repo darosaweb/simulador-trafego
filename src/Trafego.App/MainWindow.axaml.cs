@@ -26,6 +26,7 @@ public partial class MainWindow : Window
     private (Vec2 A, Vec2 B)? _pendingCalibration;
 
     private static readonly FilePickerFileType ProjectType = new("Projeto de tráfego") { Patterns = ["*" + ProjectFile.Extension] };
+    private static readonly FilePickerFileType PackageType = new("Pacote de projeto") { Patterns = ["*" + ProjectPackage.Extension, "*.zip"] };
     private static readonly FilePickerFileType ImageType = new("Imagens") { Patterns = ["*.png", "*.jpg", "*.jpeg", "*.bmp", "*.webp"] };
 
     public MainWindow() : this([]) { }
@@ -61,7 +62,11 @@ public partial class MainWindow : Window
         NewWidth.ValueChanged += (_, e) => _editor.NewLinkLaneWidth = (double)(e.NewValue ?? 3.5m);
         AddHandler(KeyDownEvent, OnWindowKeyDown, RoutingStrategies.Tunnel);
 
-        if (args.Length > 0 && File.Exists(args[0])) TryOpen(args[0]);
+        if (args.Length > 0 && File.Exists(args[0]))
+        {
+            if (ProjectPackage.IsPackage(args[0])) Opened += (_, _) => _ = OpenPackageAsync(args[0]);
+            else TryOpen(args[0]);
+        }
 
         RefreshTools();
         Refresh();
@@ -258,7 +263,8 @@ public partial class MainWindow : Window
         {
             Title = "Importar cenários de outro projeto",
             AllowMultiple = true,
-            FileTypeFilter = [ProjectType, FilePickerFileTypes.All],
+            FileTypeFilter = [new FilePickerFileType("Projeto ou pacote") { Patterns = ["*" + ProjectFile.Extension, "*" + ProjectPackage.Extension, "*.zip"] },
+                ProjectType, PackageType, FilePickerFileTypes.All],
         });
         var names = new List<string>();
         var warnings = new List<string>();
@@ -273,7 +279,7 @@ public partial class MainWindow : Window
             try
             {
                 MapCanvas.CancelToolState();
-                var result = _editor.ImportScenarios(path);
+                var result = _editor.ImportScenarios(ProjectPackage.IsPackage(path) ? ExtractForImport(path) : path);
                 names.AddRange(result.Added.Select(s => $"\"{s.Name}\""));
                 if (result.Alignment == ImportAlignment.DifferentImage)
                     warnings.Add($"{Path.GetFileName(path)} usa outra foto: confira se a rede ficou no lugar certo");
@@ -1182,10 +1188,97 @@ public partial class MainWindow : Window
         if (!await ConfirmDiscardAsync()) return;
         var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
         {
-            Title = "Abrir projeto",
-            FileTypeFilter = [ProjectType, FilePickerFileTypes.All],
+            Title = "Abrir projeto ou pacote",
+            FileTypeFilter = [new FilePickerFileType("Projeto ou pacote") { Patterns = ["*" + ProjectFile.Extension, "*" + ProjectPackage.Extension, "*.zip"] },
+                ProjectType, PackageType, FilePickerFileTypes.All],
         });
-        if (files.Count > 0 && files[0].TryGetLocalPath() is { } path) TryOpen(path);
+        if (files.Count == 0 || files[0].TryGetLocalPath() is not { } path) return;
+        if (ProjectPackage.IsPackage(path)) await OpenPackageAsync(path);
+        else TryOpen(path);
+    }
+
+    // ---------------------------------------------------------------- pacote (enviar a outra pessoa)
+
+    /// <summary>Extrai o pacote numa pasta nova, escolhida pelo usuário, e abre o projeto.</summary>
+    private async Task OpenPackageAsync(string zip)
+    {
+        PackageInfo info;
+        try { info = ProjectPackage.ReadInfo(zip); }
+        catch (Exception ex)
+        {
+            SetStatus($"Não foi possível abrir o pacote: {ex.Message}");
+            return;
+        }
+        var folders = await StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
+        {
+            Title = "Onde guardar o projeto recebido? (será criada uma pasta com o nome dele)",
+        });
+        if (folders.Count == 0 || folders[0].TryGetLocalPath() is not { } parent) return;
+        try
+        {
+            var folder = ProjectPackage.FreeFolder(parent, ProjectPackage.BaseName(info.Project));
+            var path = ProjectPackage.Extract(zip, folder);
+            _editor.Open(path);
+            MapCanvas.FitToContent();
+            SetStatus($"Pacote aberto e guardado em {folder}." + NewerVersionWarning(info));
+        }
+        catch (Exception ex)
+        {
+            SetStatus($"Não foi possível abrir o pacote: {ex.Message.Split('\n')[0]}");
+        }
+    }
+
+    /// <summary>Extrai um pacote para importar cenários: fica guardado na pasta do programa, junto com a foto.</summary>
+    private static string ExtractForImport(string zip)
+    {
+        var info = ProjectPackage.ReadInfo(zip);
+        var parent = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "daRosa Trafego", "pacotes");
+        Directory.CreateDirectory(parent);
+        return ProjectPackage.Extract(zip, ProjectPackage.FreeFolder(parent, ProjectPackage.BaseName(info.Project)));
+    }
+
+    private static string NewerVersionWarning(PackageInfo info) =>
+        Version.TryParse(info.AppVersion, out var theirs) && Version.TryParse(Brand.Version, out var ours) && theirs > ours
+            ? $" Atenção: o pacote foi feito na versão {info.AppVersion} e este programa é a {Brand.Version}; atualize se algo não abrir certo."
+            : "";
+
+    private async void OnExportPackage(object? sender, RoutedEventArgs e)
+    {
+        var results = _editor.FilePath is { } fp && Directory.Exists(ResultSet.FolderFor(fp))
+            ? Directory.GetFiles(ResultSet.FolderFor(fp), "*" + ResultSet.Extension)
+            : [];
+        var includeResults = false;
+        if (results.Length > 0)
+        {
+            var mb = results.Sum(f => new FileInfo(f).Length) / 1048576.0;
+            var choice = await ChooseAsync("Exportar pacote",
+                $"Incluir os resultados das avaliações ({results.Length} arquivo(s), {mb:0.0} MB)? " +
+                "Sem eles o pacote fica menor, e quem receber pode gerá-los de novo com Avaliar.",
+                ("Incluir resultados", "yes"), ("Sem resultados", "no"), ("Cancelar", "cancel"));
+            if (choice == "cancel") return;
+            includeResults = choice == "yes";
+        }
+        var name = _editor.FilePath is { } f ? ProjectPackage.BaseName(f) : "projeto";
+        var file = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+        {
+            Title = "Exportar pacote para enviar",
+            SuggestedFileName = name + ProjectPackage.Extension,
+            FileTypeChoices = [PackageType],
+        });
+        if (file?.TryGetLocalPath() is not { } path) return;
+        if (!path.EndsWith(ProjectPackage.Extension, StringComparison.OrdinalIgnoreCase))
+            path = Path.Combine(Path.GetDirectoryName(path)!, ProjectPackage.BaseName(path) + ProjectPackage.Extension);
+        try
+        {
+            var r = ProjectPackage.Export(_editor.Project, _editor.FilePath, path, includeResults, Brand.Version);
+            var size = new FileInfo(path).Length / 1048576.0;
+            SetStatus($"Pacote salvo: {path} ({size:0.0} MB). Quem receber abre por Arquivo → Abrir projeto…" +
+                      (r.ImageMissing ? " Atenção: a foto aérea não foi encontrada e ficou de fora." : ""));
+        }
+        catch (Exception ex)
+        {
+            SetStatus($"Não foi possível exportar o pacote: {ex.Message}");
+        }
     }
 
     private async void OnOpenImage(object? sender, RoutedEventArgs e)
@@ -1264,48 +1357,46 @@ public partial class MainWindow : Window
     {
         if (!_editor.Dirty) return true;
 
-        var choice = "cancel";
-        var dialog = new Window
-        {
-            Title = "Alterações não salvas",
-            Width = 420,
-            SizeToContent = SizeToContent.Height,
-            CanResize = false,
-            WindowStartupLocation = WindowStartupLocation.CenterOwner,
-        };
-        Button Make(string text, string result)
-        {
-            var b = new Button { Content = text };
-            b.Click += (_, _) =>
-            {
-                choice = result;
-                dialog.Close();
-            };
-            return b;
-        }
-        dialog.Content = new StackPanel
-        {
-            Margin = new Avalonia.Thickness(20),
-            Spacing = 16,
-            Children =
-            {
-                new TextBlock { Text = "O projeto tem alterações não salvas. Salvar antes de continuar?", TextWrapping = Avalonia.Media.TextWrapping.Wrap },
-                new StackPanel
-                {
-                    Orientation = Orientation.Horizontal,
-                    HorizontalAlignment = HorizontalAlignment.Right,
-                    Spacing = 8,
-                    Children = { Make("Salvar", "save"), Make("Descartar", "discard"), Make("Cancelar", "cancel") },
-                },
-            },
-        };
-        await dialog.ShowDialog(this);
-
+        var choice = await ChooseAsync("Alterações não salvas", "O projeto tem alterações não salvas. Salvar antes de continuar?",
+            ("Salvar", "save"), ("Descartar", "discard"), ("Cancelar", "cancel"));
         return choice switch
         {
             "save" => await SaveAsync(),
             "discard" => true,
             _ => false,
         };
+    }
+
+    /// <summary>Pergunta com botões; devolve o valor do botão escolhido, ou o do último se a janela for fechada.</summary>
+    private async Task<string> ChooseAsync(string title, string text, params (string Label, string Value)[] buttons)
+    {
+        var choice = buttons[^1].Value;
+        var dialog = new Window
+        {
+            Title = title,
+            Width = 440,
+            SizeToContent = SizeToContent.Height,
+            CanResize = false,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+        };
+        var row = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Spacing = 8 };
+        foreach (var (label, value) in buttons)
+        {
+            var b = new Button { Content = label };
+            b.Click += (_, _) =>
+            {
+                choice = value;
+                dialog.Close();
+            };
+            row.Children.Add(b);
+        }
+        dialog.Content = new StackPanel
+        {
+            Margin = new Avalonia.Thickness(20),
+            Spacing = 16,
+            Children = { new TextBlock { Text = text, TextWrapping = Avalonia.Media.TextWrapping.Wrap }, row },
+        };
+        await dialog.ShowDialog(this);
+        return choice;
     }
 }

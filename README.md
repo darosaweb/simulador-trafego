@@ -22,6 +22,10 @@ aberta, vira uma página HTML com sumário e busca, aberta no navegador na seç�
 ficam em `docs/img` e mostram o exemplo `samples/cruzamento.trafego.json`. O PDF
 (`docs/Manual-daRosa-Trafego.pdf`) é gerado com `build/gerar-manual-pdf.ps1`, depois de compilar.
 
+**Enviar a outra pessoa:** Arquivo → Exportar pacote para enviar… gera um `.trafego.zip` com o projeto, a foto e,
+se quiser, os resultados; quem recebe abre por Arquivo → Abrir projeto ou pacote… (ou traz os cenários por
+Cenários → Importar de outro projeto…).
+
 **Contador de Vias** ([contador/](contador/LEIA-ME.md)): app de celular (PWA, funciona offline) para contar
 carros e caminhões em campo. O CSV dele entra na demanda por **Rede → Demanda… → Importar contagens…**.
 Publicado pelo GitHub Pages em `https://darosaweb.github.io/simulador-trafego/contador/`.

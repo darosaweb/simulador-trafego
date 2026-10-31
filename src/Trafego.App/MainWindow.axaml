@@ -77,9 +77,11 @@
     <Menu DockPanel.Dock="Top">
       <MenuItem Header="_Arquivo">
         <MenuItem Header="_Novo" InputGesture="Ctrl+N" Click="OnNew" />
-        <MenuItem Header="_Abrir projeto…" InputGesture="Ctrl+O" Click="OnOpen" />
+        <MenuItem Header="_Abrir projeto ou pacote…" InputGesture="Ctrl+O" Click="OnOpen" />
         <MenuItem Header="_Salvar" InputGesture="Ctrl+S" Click="OnSave" />
         <MenuItem Header="Salvar _como…" InputGesture="Ctrl+Shift+S" Click="OnSaveAs" />
+        <Separator />
+        <MenuItem Header="_Exportar pacote para enviar…" Click="OnExportPackage" />
         <Separator />
         <MenuItem Header="Abrir _foto aérea…" Click="OnOpenImage" />
         <MenuItem Header="Exportar _vídeo da simulação…" Click="OnExportVideo" />

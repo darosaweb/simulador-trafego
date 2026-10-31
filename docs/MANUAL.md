@@ -454,7 +454,8 @@ no mapa, o painel da direita mostra o nome dele e os botões para gerenciar os c
 ![Cenário "Proposta semáforo" em edição, comparando com o "Atual" (contorno amarelo)](img/cenarios.jpg)
 
 **Para juntar projetos que você já tem em arquivos separados:** abra um deles e use **Importar…** (ou
-**Cenários → Importar de outro projeto…**) para trazer o outro. Pode escolher vários arquivos de uma vez.
+**Cenários → Importar de outro projeto…**) para trazer o outro. Pode escolher vários arquivos de uma vez,
+inclusive pacotes recebidos de outra pessoa (veja "Enviar o projeto para outra pessoa", na seção 15).
 
 - Cada cenário importado leva o nome do arquivo, ou "arquivo · cenário" se o arquivo tiver vários cenários.
 - Se os dois projetos usam a **mesma foto** (mesmo nome de arquivo), a rede importada cai no lugar certo,
@@ -508,6 +509,27 @@ Para um projeto salvo como `cenario.trafego.json`:
 | `cenario.resultados/` | resultados das avaliações (`.resultado.json`) |
 
 Sem salvar, o programa usa a pasta temporária do Windows (`%TEMP%\trafego`).
+
+### Enviar o projeto para outra pessoa
+
+O arquivo `.trafego.json` sozinho não leva a foto aérea, só o caminho dela. Para mandar o projeto a outra
+pessoa, use um **pacote**:
+
+1. **Arquivo → Exportar pacote para enviar…** grava um arquivo único `nome.trafego.zip` com o projeto (todos os
+   cenários) e a foto. Se o projeto tem resultados de avaliações, o programa pergunta se eles vão junto: sem
+   eles o pacote fica menor, e quem receber pode gerá-los de novo com **Avaliar**. O pacote leva o que está na
+   tela, inclusive alterações ainda não salvas.
+2. Mande o arquivo por e-mail, WhatsApp, Drive…
+3. Quem recebe usa **Arquivo → Abrir projeto ou pacote…**, escolhe o pacote e a pasta onde guardá-lo. O
+   programa cria ali uma pasta com o nome do projeto (ou "nome (2)", se já existir; nada é sobrescrito) e abre
+   o projeto. A partir daí é um projeto normal: **Salvar** grava nessa pasta.
+
+**Vaivém de propostas:** **Cenários → Importar de outro projeto…** também aceita pacotes. Assim, o colega pode
+criar a proposta dele e devolver o pacote, e você traz só os cenários para o seu projeto e compara. A cópia
+extraída fica em `%LOCALAPPDATA%\daRosa Trafego\pacotes`.
+
+O pacote é um zip comum (dá para abrir no Windows e ver o que tem dentro) e registra a versão do programa que o
+gerou: se for mais nova que a de quem recebe, aparece um aviso. Quem recebe precisa do daRosa Tráfego e do SUMO.
 
 ---
 
