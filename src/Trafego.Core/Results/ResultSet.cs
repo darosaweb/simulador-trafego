@@ -114,6 +114,8 @@ public sealed class ResultSet
 {
     public string Name { get; set; } = "";
     public string ProjectName { get; set; } = "";
+    /// <summary>Cenário do projeto que foi simulado.</summary>
+    public string ScenarioName { get; set; } = "";
     public DateTime CreatedAt { get; set; } = DateTime.Now;
     public SimulationSettings Settings { get; set; } = new();
     /// <summary>Verdadeiro quando a simulação foi interrompida antes do fim.</summary>

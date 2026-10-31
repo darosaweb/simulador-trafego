@@ -354,15 +354,25 @@ public sealed class Network
     }
 
     /// <summary>Escala toda a geometria em torno de um ponto (usado ao recalibrar a foto).</summary>
-    public void ScaleAbout(Vec2 origin, double factor)
+    public void ScaleAbout(Vec2 origin, double factor) => Transform(p => origin + (p - origin) * factor, factor);
+
+    /// <summary>
+    /// Move a rede por uma semelhança (escala uniforme e deslocamento): <paramref name="map"/> leva cada ponto
+    /// ao novo lugar e <paramref name="factor"/> é a escala, que vale também para as posições ao longo dos links.
+    /// </summary>
+    public void Transform(Func<Vec2, Vec2> map, double factor)
     {
-        Vec2 Map(Vec2 p) => origin + (p - origin) * factor;
-        foreach (var l in Links) l.Points = [.. l.Points.Select(Map)];
+        foreach (var l in Links) l.Points = [.. l.Points.Select(map)];
         foreach (var c in Connectors)
         {
-            c.Points = [.. c.Points.Select(Map)];
+            c.Points = [.. c.Points.Select(map)];
             c.FromS *= factor;
             c.ToS *= factor;
+        }
+        foreach (var m in Measurements)
+        {
+            m.S *= factor;
+            m.ToS *= factor;
         }
     }
 }

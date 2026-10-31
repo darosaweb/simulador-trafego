@@ -37,7 +37,7 @@ public sealed class ResultsWindow : Window
     {
         _editor = editor;
         _folder = folder;
-        Title = "Resultados — Tráfego";
+        Title = "Resultados — " + Brand.Name;
         Width = 1100;
         Height = 760;
         MinWidth = 760;
@@ -98,6 +98,15 @@ public sealed class ResultsWindow : Window
             _building = false;
         }
         BuildTabs();
+    }
+
+    /// <summary>Marca só estes resultados para comparar e mostra a aba Comparar (ex.: depois de avaliar todos os cenários).</summary>
+    public void ShowComparison(IReadOnlyList<string> paths)
+    {
+        _compare.Clear();
+        foreach (var p in paths) _compare.Add(p);
+        BuildTabs();
+        _tabs.SelectedIndex = 3;
     }
 
     private static string Label(ResultSet set, string path)
@@ -198,8 +207,8 @@ public sealed class ResultsWindow : Window
     private Control CompareTab()
     {
         var panel = Panel();
-        panel.Children.Add(Note("Marque os resultados a comparar. O primeiro marcado é a referência; as colunas Δ mostram a diferença em relação a ele. " +
-                                "Para comparar com outro projeto (outra alternativa de projeto), use \"Abrir de outro projeto…\"."));
+        panel.Children.Add(Note("Marque os resultados a comparar. O mais antigo marcado é a referência; as colunas Δ mostram a diferença em relação a ele. " +
+                                "Para comparar os cenários deste projeto, use Cenários → Avaliar todos e comparar; para outro projeto, \"Abrir de outro projeto…\"."));
         foreach (var (path, set) in _sets)
         {
             var box = new CheckBox { Content = Label(set, path), IsChecked = _compare.Contains(path) };

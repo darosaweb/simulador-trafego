@@ -1,6 +1,6 @@
-# Manual do Tráfego
+# Manual do daRosa Tráfego
 
-O Tráfego é um editor de redes viárias no estilo do PTV Vissim. Você desenha as vias sobre uma foto aérea,
+O daRosa Tráfego é um editor de redes viárias no estilo do PTV Vissim. Você desenha as vias sobre uma foto aérea,
 define a demanda e o controle (preferências e semáforos) e o programa simula o tráfego veículo a veículo
 usando o **SUMO** como motor. No fim, mede e compara cenários — por exemplo, uma rotatória contra um DDI.
 
@@ -45,13 +45,14 @@ dotnet run --project src/Trafego.App
 
 Depois da primeira vez, dá para abrir direto `src/Trafego.App/bin/Debug/net8.0/Trafego.exe`.
 
-O programa abre com uma foto de exemplo (um viaduto com alças) já calibrada.
+O programa abre com um projeto vazio. Há um exemplo pronto — uma foto de um viaduto com alças, já
+calibrada — em **Arquivo → Abrir**, na pasta `samples` ao lado do programa (`exemplo.trafego.json`).
 
 ---
 
 ## 2. Seu primeiro cenário em 10 minutos
 
-Um cruzamento de duas vias com semáforo. Use a área de pasto à direita da foto de exemplo.
+Um cruzamento de duas vias com semáforo. Abra o exemplo (Arquivo → Abrir → `samples/exemplo.trafego.json`) e use a área de pasto à direita da foto.
 
 **Desenhar as vias**
 
@@ -405,17 +406,43 @@ Os resultados ficam guardados na pasta `<projeto>.resultados/`, ao lado do arqui
 
 ## 13. Comparando cenários
 
-Na aba **Comparar**, marque dois ou mais resultados. O primeiro marcado é a referência; as colunas **Δ**
-mostram a diferença e a porcentagem, em **verde** quando melhora e **vermelho** quando piora.
+Um projeto pode ter vários **cenários**: a situação atual e uma ou mais propostas, no mesmo arquivo. Cada
+cenário tem a sua própria rede, nós, semáforos, **demanda** (entradas, matriz O/D, rotas) e medições. A foto,
+a calibração e o período simulado (início, duração, replicações) são do projeto, iguais para todos.
 
-**Para comparar alternativas de projeto** (por exemplo, rotatória × DDI):
+O cenário em edição aparece no seletor **Cenário**, no começo da barra de ferramentas. Com nada selecionado
+no mapa, o painel da direita mostra o nome dele e os botões para gerenciar os cenários (também no menu
+**Cenários**).
 
-1. Faça cada alternativa num **arquivo de projeto separado** (**Arquivo → Salvar como…**), com a **mesma
-   demanda** e medições com os **mesmos nomes**.
-2. Avalie cada uma, com o mesmo número de replicações.
-3. Na janela de resultados de uma delas, clique em **Abrir de outro projeto…** e escolha o resultado da outra
-   (fica em `outra-alternativa.resultados/`).
-4. Marque as duas em **Comparar**.
+**Para criar uma proposta a partir da situação atual:**
+
+1. Desenhe a situação atual (o primeiro cenário se chama "Atual").
+2. Clique em **Duplicar**. A cópia já fica em edição. Dê um nome a ela no painel (por exemplo "Proposta
+   rotatória").
+3. Altere só o que muda. O **contorno amarelo tracejado** mostra a rede do outro cenário por cima, para você
+   ver o que mudou. Escolha qual cenário aparece em **Comparar com** ("Nenhum" desliga).
+4. Ajuste a demanda da proposta em **Rede → Demanda**, se as vias que geram tráfego mudaram.
+
+**Para juntar projetos que você já tem em arquivos separados:** abra um deles e use **Importar…** (ou
+**Cenários → Importar de outro projeto…**) para trazer o outro. Pode escolher vários arquivos de uma vez.
+
+- Cada cenário importado leva o nome do arquivo, ou "arquivo · cenário" se o arquivo tiver vários cenários.
+- Se os dois projetos usam a **mesma foto** (mesmo nome de arquivo), a rede importada cai no lugar certo,
+  mesmo que as calibrações sejam diferentes.
+- Se o projeto aberto ainda não tem foto, ele passa a usar a do arquivo importado.
+- Se as fotos são diferentes, a barra de status avisa: confira se a rede ficou no lugar.
+- Num projeto novo e vazio, o primeiro arquivo importado toma o lugar do cenário vazio. Assim dá para fazer
+  **Novo → Importar** com todos os arquivos de uma vez.
+
+**Para comparar os resultados:** marque **todos os cenários** ao lado de **Avaliar** (o quadrinho aparece
+quando há mais de um cenário), ou use **Cenários → Avaliar todos e comparar**. Cada cenário roda com as mesmas
+sementes, um depois do outro, e a janela de resultados abre já na aba **Comparar**. O primeiro cenário é a
+referência. As colunas **Δ** mostram a diferença e a porcentagem, em **verde** quando melhora e **vermelho**
+quando piora. As medições se comparam pelo **nome**: dê o mesmo nome à medição equivalente em cada cenário
+(quem duplica já sai com os mesmos nomes).
+
+Na aba **Comparar** você também pode marcar quaisquer resultados, inclusive de outros projetos (**Abrir de
+outro projeto…**). O mais antigo marcado é a referência.
 
 Com poucas replicações, diferenças menores que o desvio-padrão podem ser só acaso.
 
@@ -443,7 +470,7 @@ Para um projeto salvo como `cenario.trafego.json`:
 
 | Arquivo ou pasta | Conteúdo |
 |---|---|
-| `cenario.trafego.json` | o projeto: rede, semáforos, demanda, medições, configuração da simulação. A foto é guardada como caminho relativo — mantenha a imagem junto |
+| `cenario.trafego.json` | o projeto: os cenários (cada um com rede, semáforos, demanda e medições) e a configuração da simulação. A foto é guardada como caminho relativo — mantenha a imagem junto. Arquivos de versões anteriores abrem normalmente, com a rede como cenário "Atual" |
 | `cenario.sumo/` | arquivos gerados para o SUMO (rede, rotas, semáforos, detectores, configuração) e as saídas das simulações |
 | `cenario.resultados/` | resultados das avaliações (`.resultado.json`) |
 

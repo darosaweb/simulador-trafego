@@ -45,7 +45,7 @@ public sealed class VideoWindow : Window
         _project = project;
         _scenarioDirectory = scenarioDirectory;
         _suggestedName = suggestedName;
-        Title = "Exportar vídeo — Tráfego";
+        Title = "Exportar vídeo — " + Brand.Name;
         Width = 560;
         SizeToContent = SizeToContent.Height;
         CanResize = false;

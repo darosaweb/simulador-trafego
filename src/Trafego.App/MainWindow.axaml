@@ -2,7 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ed="using:Trafego.App.Editor"
         x:Class="Trafego.App.MainWindow"
-        Title="Tráfego" Width="1400" Height="860" MinWidth="900" MinHeight="560"
+        Title="daRosa Tráfego" Width="1400" Height="860" MinWidth="900" MinHeight="560"
         WindowStartupLocation="CenterScreen">
 
   <Window.Styles>
@@ -67,6 +67,13 @@
         <Separator />
         <MenuItem Header="_Excluir seleção" InputGesture="Delete" Click="OnDelete" />
       </MenuItem>
+      <MenuItem Header="_Cenários">
+        <MenuItem Header="_Duplicar o cenário atual" Click="OnDuplicateScenario" />
+        <MenuItem Header="_Importar de outro projeto…" Click="OnImportScenario" />
+        <MenuItem x:Name="RemoveScenarioItem" Header="_Excluir o cenário atual" Click="OnRemoveScenario" />
+        <Separator />
+        <MenuItem Header="_Avaliar todos e comparar" Click="OnEvaluateAll" />
+      </MenuItem>
       <MenuItem Header="_Rede">
         <MenuItem Header="_Semáforos…" Click="OnOpenSignals" />
         <MenuItem Header="_Demanda (volumes, matriz O/D, rotas)…" Click="OnOpenDemand" />
@@ -76,10 +83,17 @@
       <MenuItem Header="E_xibir">
         <MenuItem Header="_Ajustar à tela" InputGesture="F" Click="OnFit" />
       </MenuItem>
+      <MenuItem Header="Aj_uda">
+        <MenuItem Header="_Sobre o daRosa Tráfego…" Click="OnAbout" />
+      </MenuItem>
     </Menu>
 
     <Border DockPanel.Dock="Top" Background="#1d2127" BorderBrush="#2d333b" BorderThickness="0,0,0,1" Padding="8,6">
       <WrapPanel Orientation="Horizontal" ItemSpacing="6" LineSpacing="6">
+        <TextBlock Classes="label" Text="Cenário" />
+        <ComboBox x:Name="ScenarioBox" Width="190" SelectionChanged="OnScenarioChanged"
+                  ToolTip.Tip="Cenário em edição: cada um tem a sua rede, semáforos e demanda (menu Cenários)" />
+        <Border Width="1" Background="#2d333b" Margin="8,2" />
         <ToggleButton x:Name="ToolSelect" Classes="tool" Content="Selecionar (V)" Click="OnToolClick" />
         <ToggleButton x:Name="ToolLink" Classes="tool" Content="Link (L)" Click="OnToolClick" />
         <ToggleButton x:Name="ToolConnector" Classes="tool" Content="Conector (C)" Click="OnToolClick" />
@@ -123,6 +137,8 @@
         <NumericUpDown x:Name="EvalReplications" Minimum="1" Maximum="50" Increment="1" Value="3" FormatString="0" Width="105"
                        ValueChanged="OnReplicationsChanged" ToolTip.Tip="Replicações" />
         <TextBlock Classes="label" Text="replic." />
+        <CheckBox x:Name="EvalAll" Content="todos os cenários" IsVisible="False"
+                  ToolTip.Tip="Avalia cada cenário com as mesmas sementes e abre a comparação" />
         <Button Content="Resultados…" Click="OnOpenResults" />
         <Button Content="Vídeo…" Click="OnExportVideo" ToolTip.Tip="Exporta um vídeo MP4 da simulação, enquadrando o que está na tela" />
       </WrapPanel>
@@ -286,6 +302,20 @@
           </StackPanel>
 
           <StackPanel x:Name="NetworkPanel">
+            <TextBlock Classes="h" Text="CENÁRIO" />
+            <Grid Classes="form" ColumnDefinitions="110,*" RowDefinitions="Auto,Auto">
+              <TextBlock Classes="label" Text="Nome" />
+              <TextBox x:Name="ScenarioName" Grid.Column="1" LostFocus="OnScenarioNameCommit" KeyDown="OnNameKeyDown" />
+              <TextBlock Classes="label" Grid.Row="1" Text="Comparar com" />
+              <ComboBox x:Name="ReferenceBox" Grid.Row="1" Grid.Column="1" HorizontalAlignment="Stretch" Margin="0,2"
+                        SelectionChanged="OnReferenceChanged"
+                        ToolTip.Tip="Mostra o contorno (amarelo tracejado) de outro cenário por cima deste" />
+            </Grid>
+            <WrapPanel Orientation="Horizontal" ItemSpacing="6" LineSpacing="6" Margin="0,6,0,0">
+              <Button Content="Duplicar" Click="OnDuplicateScenario" ToolTip.Tip="Cria uma cópia deste cenário para editar a alternativa" />
+              <Button Content="Importar…" Click="OnImportScenario" ToolTip.Tip="Traz os cenários de outro arquivo de projeto" />
+              <Button x:Name="RemoveScenarioButton" Content="Excluir" Click="OnRemoveScenario" />
+            </WrapPanel>
             <TextBlock Classes="h" Text="REDE" />
             <TextBlock x:Name="NetworkInfo" Classes="muted" />
             <TextBlock Classes="h" Text="VERIFICAÇÃO" />

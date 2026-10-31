@@ -28,7 +28,7 @@ public sealed class DemandWindow : Window
     public DemandWindow(EditorState editor)
     {
         _editor = editor;
-        Title = "Demanda — Tráfego";
+        Title = "Demanda — " + Brand.Name;
         Width = 1000;
         Height = 760;
         MinWidth = 700;

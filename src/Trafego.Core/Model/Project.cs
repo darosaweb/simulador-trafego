@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Trafego.Core.Geometry;
 
 namespace Trafego.Core.Model;
@@ -21,6 +22,19 @@ public sealed class Calibration
     public Vec2 B { get; set; }
     public double Meters { get; set; }
 }
+
+/// <summary>Como as redes importadas de outro projeto ficaram em relação à foto deste.</summary>
+public enum ImportAlignment
+{
+    /// <summary>Mesma foto (ou nenhuma nos dois): as redes caem no mesmo lugar.</summary>
+    SameImage,
+    /// <summary>Este projeto não tinha foto e passou a usar a do outro.</summary>
+    AdoptedImage,
+    /// <summary>Fotos diferentes: as coordenadas foram mantidas e podem não bater com a foto.</summary>
+    DifferentImage,
+}
+
+public sealed record ImportResult(IReadOnlyList<Scenario> Added, ImportAlignment Alignment, bool ReplacedEmpty);
 
 /// <summary>Período simulado, no relógio: começa num horário do dia e dura alguns minutos.</summary>
 public sealed class SimulationSettings
@@ -50,15 +64,135 @@ public sealed class SimulationSettings
     }
 }
 
+/// <summary>
+/// Uma alternativa do projeto (ex.: a situação atual e uma proposta): a rede inteira, com semáforos,
+/// demanda e medições próprias. A foto, a calibração e o período simulado são do projeto.
+/// </summary>
+public sealed class Scenario
+{
+    public string Name { get; set; } = "Atual";
+    public Network Network { get; set; } = new();
+}
+
 public sealed class Project
 {
-    public const int CurrentFormat = 1;
+    /// <summary>2: cenários (o formato 1 tinha uma rede só, lida como o cenário "Atual").</summary>
+    public const int CurrentFormat = 2;
 
     public int Format { get; set; } = CurrentFormat;
     public Background? Background { get; set; }
     public Calibration? Calibration { get; set; }
-    public Network Network { get; set; } = new();
+    public List<Scenario> Scenarios { get; set; } = [new()];
+    /// <summary>Índice do cenário em edição.</summary>
+    public int ActiveScenario { get; set; }
     public SimulationSettings Simulation { get; set; } = new();
+
+    [JsonIgnore]
+    public Scenario Active
+    {
+        get
+        {
+            if (Scenarios.Count == 0) Scenarios.Add(new Scenario());
+            return Scenarios[Math.Clamp(ActiveScenario, 0, Scenarios.Count - 1)];
+        }
+    }
+
+    /// <summary>Rede do cenário em edição.</summary>
+    [JsonIgnore]
+    public Network Network
+    {
+        get => Active.Network;
+        set => Active.Network = value;
+    }
+
+    /// <summary>Nome que ainda não é usado por nenhum cenário: o próprio, ou com " (2)", " (3)"…</summary>
+    public string UniqueScenarioName(string name) => UniqueScenarioNameFor(name, -1);
+
+    /// <summary>Como <see cref="UniqueScenarioName"/>, ignorando o próprio cenário (para renomear).</summary>
+    public string UniqueScenarioNameFor(string name, int index)
+    {
+        name = string.IsNullOrWhiteSpace(name) ? "Cenário" : name.Trim();
+        var candidate = name;
+        for (var i = 2; Scenarios.Where((_, k) => k != index).Any(s => string.Equals(s.Name, candidate, StringComparison.OrdinalIgnoreCase)); i++)
+            candidate = $"{name} ({i})";
+        return candidate;
+    }
+
+    /// <summary>Cópia independente do cenário, logo depois dele, já em edição.</summary>
+    public Scenario DuplicateScenario(int index, string? name = null)
+    {
+        var source = Scenarios[index];
+        var copy = new Scenario
+        {
+            Name = UniqueScenarioName(name ?? source.Name + " (cópia)"),
+            Network = Serialization.ProjectFile.CloneNetwork(source.Network),
+        };
+        Scenarios.Insert(index + 1, copy);
+        ActiveScenario = index + 1;
+        return copy;
+    }
+
+    /// <summary>Remove o cenário (sempre fica pelo menos um).</summary>
+    public void RemoveScenario(int index)
+    {
+        if (Scenarios.Count <= 1 || index < 0 || index >= Scenarios.Count) return;
+        Scenarios.RemoveAt(index);
+        if (ActiveScenario > index || ActiveScenario >= Scenarios.Count) ActiveScenario = Math.Max(0, ActiveScenario - 1);
+    }
+
+    /// <summary>
+    /// Traz os cenários de outro projeto. As redes são levadas para a foto deste: se as duas usam a mesma
+    /// imagem (pelo nome do arquivo), cada ponto da foto continua no mesmo ponto, mesmo com calibrações
+    /// diferentes. Se este projeto ainda não tem foto, adota a do outro. Se este projeto está vazio
+    /// (um cenário sem nada desenhado), o cenário vazio dá lugar aos importados.
+    /// </summary>
+    /// <param name="sourceName">Nome do arquivo de origem, usado para nomear os cenários.</param>
+    public ImportResult ImportScenarios(Project other, string sourceName)
+    {
+        var aligned = ImportAlignment.SameImage;
+        Func<Vec2, Vec2>? map = null;
+        var factor = 1.0;
+        if (other.Background is { } ob && Background is { } bg)
+        {
+            if (string.Equals(Path.GetFileName(ob.ImagePath), Path.GetFileName(bg.ImagePath), StringComparison.OrdinalIgnoreCase))
+            {
+                factor = bg.MetersPerPixel / ob.MetersPerPixel;
+                if (Math.Abs(factor - 1) > 1e-12 || Vec2.Distance(ob.Origin, bg.Origin) > 1e-9)
+                    map = p => bg.ToWorld(ob.ToPixel(p));
+            }
+            else aligned = ImportAlignment.DifferentImage;
+        }
+        else if (other.Background is { } adopt && Background is null)
+        {
+            Background = new Background { ImagePath = adopt.ImagePath, MetersPerPixel = adopt.MetersPerPixel, Origin = adopt.Origin };
+            Calibration = other.Calibration;
+            aligned = ImportAlignment.AdoptedImage;
+        }
+        else if (other.Background is not null || Background is not null) aligned = ImportAlignment.DifferentImage;
+
+        var replaceEmpty = Scenarios.Count == 1 && IsEmpty(Scenarios[0].Network);
+        if (replaceEmpty)
+        {
+            Scenarios.Clear();
+            Simulation = other.Simulation;
+        }
+
+        var added = new List<Scenario>();
+        foreach (var s in other.Scenarios)
+        {
+            var net = Serialization.ProjectFile.CloneNetwork(s.Network);
+            if (map is not null) net.Transform(map, factor);
+            // Um cenário só (ou o "Atual" de um arquivo antigo) leva o nome do arquivo; vários, "arquivo · cenário".
+            var name = other.Scenarios.Count == 1 ? sourceName : $"{sourceName} · {s.Name}";
+            var scenario = new Scenario { Name = UniqueScenarioName(name), Network = net };
+            Scenarios.Add(scenario);
+            added.Add(scenario);
+        }
+        ActiveScenario = Scenarios.IndexOf(added[0]);
+        return new ImportResult(added, aligned, replaceEmpty);
+    }
+
+    private static bool IsEmpty(Network n) => n.Links.Count == 0 && n.Connectors.Count == 0 && n.Inputs.Count == 0;
 
     /// <summary>
     /// Calibra a foto pela régua. Se a escala muda, a rede é escalada junto em torno da
@@ -75,7 +209,7 @@ public sealed class Project
 
         var newMpp = meters / px;
         var factor = newMpp / Background.MetersPerPixel;
-        Network.ScaleAbout(Background.Origin, factor);
+        foreach (var s in Scenarios) s.Network.ScaleAbout(Background.Origin, factor);
         Background.MetersPerPixel = newMpp;
         Calibration = new Calibration { A = pixelA, B = pixelB, Meters = meters };
         return factor;

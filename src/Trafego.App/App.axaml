@@ -1,8 +1,29 @@
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="Trafego.App.App"
+             Name="daRosa Tráfego"
              RequestedThemeVariant="Dark">
+  <Application.Resources>
+    <!-- Cores da marca daRosa (docs/MARCA.md). -->
+    <Color x:Key="RosaClaro">#FECCCB</Color>
+    <Color x:Key="Rosa">#FF8CA1</Color>
+    <Color x:Key="Framboesa">#CC3467</Color>
+    <Color x:Key="Tinta">#231F20</Color>
+    <SolidColorBrush x:Key="RosaClaroBrush" Color="{StaticResource RosaClaro}" />
+    <SolidColorBrush x:Key="RosaBrush" Color="{StaticResource Rosa}" />
+    <SolidColorBrush x:Key="FramboesaBrush" Color="{StaticResource Framboesa}" />
+    <SolidColorBrush x:Key="TintaBrush" Color="{StaticResource Tinta}" />
+  </Application.Resources>
   <Application.Styles>
-    <FluentTheme />
+    <FluentTheme>
+      <FluentTheme.Palettes>
+        <!-- Destaque (botões principais, ferramenta ativa, seleção nas listas) na framboesa da marca. -->
+        <ColorPaletteResources x:Key="Dark" Accent="#CC3467" />
+        <ColorPaletteResources x:Key="Light" Accent="#CC3467" />
+      </FluentTheme.Palettes>
+    </FluentTheme>
+    <Style Selector=":is(Window)">
+      <Setter Property="Icon" Value="/Assets/app.ico" />
+    </Style>
   </Application.Styles>
 </Application>

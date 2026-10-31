@@ -28,7 +28,7 @@ public sealed class SignalWindow : Window
     {
         _editor = editor;
         _controllerId = controllerId;
-        Title = "Semáforos — Tráfego";
+        Title = "Semáforos — " + Brand.Name;
         Width = 1180;
         Height = 720;
         MinWidth = 820;

@@ -796,6 +796,7 @@ public sealed class NetworkCanvas : Control
 
             if (!_video)
             {
+                if (_editor.ReferenceNetwork is { } reference) DrawReference(ctx, reference);
                 if (_hover is { } h) DrawLaneHighlight(ctx, h.Link, h.Lane);
                 if (_connectorFrom is { } from && Net.FindLink(from.LinkId) is { } fl) DrawLaneHighlight(ctx, fl, from.Lane);
                 DrawDraft(ctx);
@@ -891,6 +892,24 @@ public sealed class NetworkCanvas : Control
             ctx.DrawGeometry(null, dash, Shape(Polyline.Offset(axis, g.LaneOffsets[i] + g.LaneWidths[i] / 2), closed: false));
 
         DrawArrows(ctx, g.Axis, g.LaneOffsets, g.LaneWidths);
+    }
+
+    private static readonly IBrush ReferenceFill = new SolidColorBrush(Color.FromArgb(28, 255, 209, 102));
+    private static readonly IBrush ReferenceStroke = new SolidColorBrush(Color.FromArgb(230, 255, 209, 102));
+
+    /// <summary>Cenário de referência: só o contorno tracejado de links e conectores, por cima do cenário em edição.</summary>
+    private void DrawReference(DrawingContext ctx, Network reference)
+    {
+        var pen = new Pen(ReferenceStroke, Px(1.5), new DashStyle([4, 3], 0));
+        foreach (var link in reference.Links)
+        {
+            if (link.Points.Count < 2) continue;
+            var half = link.TotalWidth / 2;
+            ctx.DrawGeometry(ReferenceFill, pen, Ribbon(link.Axis().Points, -half, half));
+        }
+        foreach (var c in reference.Connectors)
+            if (reference.GeometryOf(c) is { } g)
+                ctx.DrawGeometry(ReferenceFill, pen, Ribbon(g.Axis.Points, -g.TotalWidth / 2, g.TotalWidth / 2));
     }
 
     /// <summary>Setas de sentido no centro de cada faixa, espaçadas ao longo do eixo.</summary>

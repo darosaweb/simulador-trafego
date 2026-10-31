@@ -1,4 +1,6 @@
-# Tráfego
+<img src="assets/brand/logo-horizontal.svg" alt="daRosa Tráfego" width="480">
+
+# daRosa Tráfego
 
 Editor de redes viárias no estilo do PTV Vissim, sobre foto aérea, com o SUMO como motor de simulação. Projeto de aprendizado e pesquisa. Desktop Windows, C#/.NET 8 + Avalonia 11.
 
@@ -9,12 +11,14 @@ dotnet run --project src/Trafego.App
 dotnet test
 ```
 
-O app abre com o exemplo `samples/exemplo.trafego.json`, uma foto já calibrada pela régua de 370,20 m.
+O app abre com um projeto vazio. O exemplo `samples/exemplo.trafego.json` (uma foto já calibrada pela
+régua de 370,20 m) é aberto por Arquivo → Abrir.
 
 **Como usar: veja o [Manual](docs/MANUAL.md)**, com um passo a passo do primeiro cenário (cruzamento com
 semáforo) e todas as ferramentas.
 
 Planejamento da distribuição pública (instalador, licenças): [docs/DISTRIBUICAO.md](docs/DISTRIBUICAO.md).
+Marca (logo, cores, ícone): [docs/MARCA.md](docs/MARCA.md).
 
 ## Modelo de rede
 

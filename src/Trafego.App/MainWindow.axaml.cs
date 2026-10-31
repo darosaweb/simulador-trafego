@@ -42,8 +42,10 @@ public partial class MainWindow : Window
         _sim.StateChanged += OnSimStateChanged;
         _sim.ResultsReady += set =>
         {
-            set.Name = $"{ProjectName} · {set.CreatedAt:dd/MM HH:mm:ss} · animação{(set.Partial ? " (interrompida)" : "")}";
+            var p = _editor.Project;
+            set.Name = $"{Titled(ProjectName, p, p.Active)} · {set.CreatedAt:dd/MM HH:mm:ss} · animação{(set.Partial ? " (interrompida)" : "")}";
             set.ProjectName = ProjectName;
+            set.ScenarioName = p.Active.Name;
             var path = SaveResult(set);
             SetStatus($"Resultados da simulação animada salvos (Rede → Resultados): {path}");
             _resultsWindow?.Reload(path);
@@ -58,9 +60,7 @@ public partial class MainWindow : Window
         NewWidth.ValueChanged += (_, e) => _editor.NewLinkLaneWidth = (double)(e.NewValue ?? 3.5m);
         AddHandler(KeyDownEvent, OnWindowKeyDown, RoutingStrategies.Tunnel);
 
-        var sample = Path.Combine(AppContext.BaseDirectory, "samples", "exemplo" + ProjectFile.Extension);
         if (args.Length > 0 && File.Exists(args[0])) TryOpen(args[0]);
-        else if (File.Exists(sample)) TryOpen(sample, asTemplate: true);
 
         RefreshTools();
         Refresh();
@@ -88,13 +88,14 @@ public partial class MainWindow : Window
         try
         {
             var name = _editor.FilePath is { } p ? Path.GetFileName(p) : "sem título";
-            Title = $"{name}{(_editor.Dirty ? " •" : "")} — Tráfego";
+            Title = $"{name}{(_editor.Dirty ? " •" : "")} — {Brand.Name}";
             UndoItem.IsEnabled = _editor.CanUndo;
             RedoItem.IsEnabled = _editor.CanRedo;
             var sim = _editor.Project.Simulation;
             if (!SimStart.IsFocused) SimStart.Text = SignalWindow.FormatTime(sim.StartTimeOfDay);
             SimMinutes.Value = (decimal)sim.DurationMinutes;
             EvalReplications.Value = sim.Replications;
+            FillScenarios();
 
             var link = _editor.SelectedLink;
             var conn = _editor.SelectedConnector;
@@ -193,6 +194,101 @@ public partial class MainWindow : Window
     }
 
     /// <summary>Atualiza os itens (id, texto) da ComboBox só se mudaram, e seleciona o id.</summary>
+    // ---------------------------------------------------------------- cenários
+
+    private void FillScenarios()
+    {
+        var project = _editor.Project;
+        var names = project.Scenarios.Select((s, i) => (i, s.Name)).ToList();
+        SetItems(ScenarioBox, names, project.ActiveScenario);
+        ScenarioBox.IsEnabled = !_editor.ReadOnly;
+        if (!ScenarioName.IsFocused) ScenarioName.Text = project.Active.Name;
+        SetItems(ReferenceBox, [(-1, "Nenhum"), .. names.Where(n => n.i != project.ActiveScenario)],
+            _editor.ReferenceNetwork is not null ? _editor.ReferenceScenario!.Value : -1);
+        var several = project.Scenarios.Count > 1;
+        ReferenceBox.IsEnabled = several;
+        RemoveScenarioButton.IsEnabled = RemoveScenarioItem.IsEnabled = several && !_editor.ReadOnly;
+        EvalAll.IsVisible = several;
+    }
+
+    private void OnScenarioChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (_refreshing || ScenarioBox.SelectedItem is not ComboBoxItem { Tag: int index }) return;
+        MapCanvas.CancelToolState();
+        MapCanvas.ClearFocus();
+        _editor.SwitchScenario(index);
+        SetStatus($"Editando o cenário \"{_editor.Project.Active.Name}\".");
+    }
+
+    private void OnReferenceChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (_refreshing || ReferenceBox.SelectedItem is not ComboBoxItem { Tag: int index }) return;
+        _editor.SetReferenceScenario(index < 0 ? null : index);
+    }
+
+    private void OnScenarioNameCommit(object? sender, RoutedEventArgs e)
+    {
+        if (ScenarioName.Text is { } text) _editor.RenameScenario(_editor.Project.UniqueScenarioNameFor(text, _editor.Project.ActiveScenario));
+    }
+
+    private void OnDuplicateScenario(object? sender, RoutedEventArgs e)
+    {
+        if (_editor.ReadOnly) return;
+        var from = _editor.Project.Active.Name;
+        MapCanvas.CancelToolState();
+        _editor.DuplicateScenario();
+        SetStatus($"Cenário \"{_editor.Project.Active.Name}\" criado como cópia de \"{from}\". O contorno amarelo mostra \"{from}\"; " +
+                  "dê um nome ao novo cenário no painel à direita.");
+    }
+
+    private void OnRemoveScenario(object? sender, RoutedEventArgs e)
+    {
+        if (_editor.ReadOnly || _editor.Project.Scenarios.Count <= 1) return;
+        var name = _editor.Project.Active.Name;
+        MapCanvas.CancelToolState();
+        _editor.RemoveScenario();
+        SetStatus($"Cenário \"{name}\" excluído (Ctrl+Z desfaz).");
+    }
+
+    private async void OnImportScenario(object? sender, RoutedEventArgs e)
+    {
+        if (_editor.ReadOnly) return;
+        var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = "Importar cenários de outro projeto",
+            AllowMultiple = true,
+            FileTypeFilter = [ProjectType, FilePickerFileTypes.All],
+        });
+        var names = new List<string>();
+        var warnings = new List<string>();
+        foreach (var f in files)
+        {
+            if (f.TryGetLocalPath() is not { } path) continue;
+            if (_editor.FilePath is { } own && string.Equals(Path.GetFullPath(own), Path.GetFullPath(path), StringComparison.OrdinalIgnoreCase))
+            {
+                warnings.Add("o próprio projeto aberto não pode ser importado (use Duplicar)");
+                continue;
+            }
+            try
+            {
+                MapCanvas.CancelToolState();
+                var result = _editor.ImportScenarios(path);
+                names.AddRange(result.Added.Select(s => $"\"{s.Name}\""));
+                if (result.Alignment == ImportAlignment.DifferentImage)
+                    warnings.Add($"{Path.GetFileName(path)} usa outra foto: confira se a rede ficou no lugar certo");
+            }
+            catch (Exception ex)
+            {
+                warnings.Add($"não foi possível importar {Path.GetFileName(path)}: {ex.Message.Split('\n')[0]}");
+            }
+        }
+        if (names.Count == 0 && warnings.Count == 0) return;
+        var text = names.Count > 0 ? $"Importado(s): {string.Join(", ", names)}." : "Nada importado.";
+        if (warnings.Count > 0) text += " Atenção: " + string.Join("; ", warnings) + ".";
+        SetStatus(text);
+        if (names.Count > 0) MapCanvas.FitToContent();
+    }
+
     private static void SetItems(ComboBox box, IReadOnlyList<(int Id, string Text)> items, int selected)
     {
         var current = box.Items.OfType<ComboBoxItem>().Select(i => ((int)i.Tag!, i.Content as string ?? "")).ToList();
@@ -623,12 +719,29 @@ public partial class MainWindow : Window
         var dir = ResultsFolder();
         Directory.CreateDirectory(dir);
         var path = Path.Combine(dir, $"{set.CreatedAt:yyyyMMdd-HHmmss}{ResultSet.Extension}");
+        for (var i = 2; File.Exists(path); i++)
+            path = Path.Combine(dir, $"{set.CreatedAt:yyyyMMdd-HHmmss}-{i}{ResultSet.Extension}");
         set.Save(path);
         return path;
     }
 
-    /// <summary>Roda as replicações em processos sumo paralelos, sem animação; clicar de novo cancela.</summary>
-    private async void OnEvaluate(object? sender, RoutedEventArgs e)
+    private void OnEvaluate(object? sender, RoutedEventArgs e) =>
+        Evaluate(all: EvalAll.IsChecked == true && _editor.Project.Scenarios.Count > 1);
+
+    private void OnEvaluateAll(object? sender, RoutedEventArgs e)
+    {
+        if (_evalCancel is null) Evaluate(all: true);
+    }
+
+    /// <summary>"Projeto · Cenário" (só o projeto quando há um cenário só).</summary>
+    private static string Titled(string project, Project p, Scenario s) =>
+        p.Scenarios.Count > 1 ? $"{project} · {s.Name}" : project;
+
+    /// <summary>
+    /// Roda as replicações em processos sumo paralelos, sem animação; clicar de novo cancela. Com todos os
+    /// cenários, roda um depois do outro com as mesmas sementes e abre a comparação.
+    /// </summary>
+    private async void Evaluate(bool all)
     {
         if (_evalCancel is { } running)
         {
@@ -642,25 +755,34 @@ public partial class MainWindow : Window
         }
 
         var copy = ProjectFile.FromJson(ProjectFile.ToJson(_editor.Project));
-        var dir = Path.Combine(ScenarioDirectory(), "avaliacao");
+        var indices = all ? Enumerable.Range(0, copy.Scenarios.Count).ToList() : [copy.ActiveScenario];
         var n = Math.Max(1, copy.Simulation.Replications);
         _evalCancel = new CancellationTokenSource();
         EvalRun.Content = "Cancelar avaliação";
+        var paths = new List<string>();
         try
         {
-            SetStatus("Avaliação: preparando o cenário no SUMO…");
-            var scenario = await Task.Run(() => SumoScenario.Prepare(copy.Network, dir, copy.Simulation));
-            SetStatus($"Avaliação: rodando {n} replicação(ões)…");
-            var set = await SumoBatch.RunAsync(scenario, $"{ProjectName} · {DateTime.Now:dd/MM HH:mm:ss} · {n} replic.",
-                new Progress<string>(m => SetStatus("Avaliação: " + m)), _evalCancel.Token);
-            set.ProjectName = ProjectName;
-            var path = SaveResult(set);
-            SetStatus($"Avaliação concluída: {path}");
-            OpenResults(path);
+            foreach (var i in indices)
+            {
+                var sc = copy.Scenarios[i];
+                var label = indices.Count > 1 ? $"Avaliação ({paths.Count + 1}/{indices.Count}, {sc.Name}): " : "Avaliação: ";
+                var dir = Path.Combine(ScenarioDirectory(), copy.Scenarios.Count > 1 ? $"avaliacao-{i + 1}" : "avaliacao");
+                SetStatus(label + "preparando o cenário no SUMO…");
+                var scenario = await Task.Run(() => SumoScenario.Prepare(sc.Network, dir, copy.Simulation));
+                SetStatus(label + $"rodando {n} replicação(ões)…");
+                var set = await SumoBatch.RunAsync(scenario, $"{Titled(ProjectName, copy, sc)} · {DateTime.Now:dd/MM HH:mm:ss} · {n} replic.",
+                    new Progress<string>(m => SetStatus(label + m)), _evalCancel.Token);
+                set.ProjectName = ProjectName;
+                set.ScenarioName = sc.Name;
+                paths.Add(SaveResult(set));
+            }
+            SetStatus(paths.Count > 1 ? $"Avaliação dos {paths.Count} cenários concluída." : $"Avaliação concluída: {paths[0]}");
+            if (paths.Count > 1) OpenResults(paths[0], compare: paths);
+            else OpenResults(paths[0]);
         }
         catch (OperationCanceledException)
         {
-            SetStatus("Avaliação cancelada.");
+            SetStatus("Avaliação cancelada" + (paths.Count > 0 ? $" ({paths.Count} cenário(s) já avaliado(s) estão em Resultados)." : "."));
         }
         catch (Exception ex)
         {
@@ -706,17 +828,21 @@ public partial class MainWindow : Window
 
     private void OnOpenResults(object? sender, RoutedEventArgs e) => OpenResults(null);
 
-    private void OpenResults(string? select)
+    /// <param name="compare">Resultados a deixar marcados (e mostrados) na aba Comparar.</param>
+    private void OpenResults(string? select, IReadOnlyList<string>? compare = null)
     {
-        if (_resultsWindow is { } open)
+        if (_resultsWindow is null)
         {
-            open.Reload(select);
-            open.Activate();
-            return;
+            _resultsWindow = new ResultsWindow(_editor, ResultsFolder(), select);
+            _resultsWindow.Closed += (_, _) => _resultsWindow = null;
+            _resultsWindow.Show(this);
         }
-        _resultsWindow = new ResultsWindow(_editor, ResultsFolder(), select);
-        _resultsWindow.Closed += (_, _) => _resultsWindow = null;
-        _resultsWindow.Show(this);
+        else
+        {
+            _resultsWindow.Reload(select);
+            _resultsWindow.Activate();
+        }
+        if (compare is not null) _resultsWindow.ShowComparison(compare);
     }
 
     private DemandWindow? _demandWindow;
@@ -976,6 +1102,8 @@ public partial class MainWindow : Window
     private void OnRedo(object? sender, RoutedEventArgs e) => _editor.Redo();
     private void OnDelete(object? sender, RoutedEventArgs e) => _editor.DeleteSelection();
     private void OnFit(object? sender, RoutedEventArgs e) => MapCanvas.FitToContent();
+
+    private async void OnAbout(object? sender, RoutedEventArgs e) => await new AboutWindow().ShowDialog(this);
 
     // ---------------------------------------------------------------- arquivos
 

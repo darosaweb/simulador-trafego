@@ -174,6 +174,87 @@ public sealed class EditorState
         ModelChanged();
     }
 
+    // ---------------------------------------------------------------- cenários
+
+    /// <summary>Cenário mostrado por baixo, só o contorno, para comparar enquanto se edita; null = nenhum.</summary>
+    public int? ReferenceScenario { get; private set; }
+
+    public Network? ReferenceNetwork =>
+        ReferenceScenario is { } r && r != Project.ActiveScenario && r < Project.Scenarios.Count ? Project.Scenarios[r].Network : null;
+
+    public void SetReferenceScenario(int? index)
+    {
+        ReferenceScenario = index;
+        Changed?.Invoke();
+    }
+
+    /// <summary>Troca o cenário em edição. Não entra no histórico (desfazer volta ao cenário da edição desfeita).</summary>
+    public void SwitchScenario(int index)
+    {
+        if (ReadOnly || index == Project.ActiveScenario || index < 0 || index >= Project.Scenarios.Count) return;
+        // Comparando com o cenário para o qual se está indo: a comparação passa a ser com o que se deixa.
+        if (ReferenceScenario == index) ReferenceScenario = Project.ActiveScenario;
+        Project.ActiveScenario = index;
+        _current = ProjectFile.ToJson(Project);
+        ClearSelectionSilently();
+        ModelChanged();
+    }
+
+    public void DuplicateScenario()
+    {
+        if (ReadOnly) return;
+        var from = Project.ActiveScenario;
+        Project.DuplicateScenario(from);
+        ReferenceScenario ??= from; // a cópia nasce já comparando com a original
+        ClearSelectionSilently();
+        Checkpoint();
+    }
+
+    public void RenameScenario(string name)
+    {
+        name = name.Trim();
+        if (ReadOnly || name.Length == 0 || name == Project.Active.Name) return;
+        Project.Active.Name = name;
+        Checkpoint();
+    }
+
+    public void RemoveScenario()
+    {
+        if (ReadOnly || Project.Scenarios.Count <= 1) return;
+        var index = Project.ActiveScenario;
+        Project.RemoveScenario(index);
+        if (ReferenceScenario is { } r) ReferenceScenario = r == index ? null : r > index ? r - 1 : r;
+        ClearSelectionSilently();
+        Checkpoint();
+    }
+
+    /// <summary>Traz os cenários de outro arquivo de projeto.</summary>
+    public ImportResult ImportScenarios(string path)
+    {
+        var other = ProjectFile.Load(path);
+        var name = Path.GetFileName(path);
+        if (name.EndsWith(ProjectFile.Extension, StringComparison.OrdinalIgnoreCase)) name = name[..^ProjectFile.Extension.Length];
+        var oldImage = Project.Background?.ImagePath;
+        var result = Project.ImportScenarios(other, name);
+        if (result.ReplacedEmpty) ReferenceScenario = null;
+        ClearSelectionSilently();
+        if (Project.Background?.ImagePath != oldImage) BackgroundChanged?.Invoke();
+        Checkpoint();
+        return result;
+    }
+
+    private void ClearSelectionSilently()
+    {
+        SelectedLinkId = null;
+        SelectedConnectorId = null;
+        SelectedInputId = null;
+        SelectedConflict = null;
+        SelectedJunctionKey = null;
+        SelectedMeasurementId = null;
+        Highlight = null;
+        LinkOverlay = null;
+    }
+
     public void New() => Replace(new Project(), null);
 
     /// <param name="asTemplate">Abre como modelo: o arquivo original não é sobrescrito ao salvar.</param>
@@ -195,12 +276,8 @@ public sealed class EditorState
         _undo.Clear();
         _redo.Clear();
         _current = ProjectFile.ToJson(Project);
-        SelectedLinkId = null;
-        SelectedConnectorId = null;
-        SelectedInputId = null;
-        SelectedConflict = null;
-        SelectedJunctionKey = null;
-        SelectedMeasurementId = null;
+        ReferenceScenario = null;
+        ClearSelectionSilently();
         BackgroundChanged?.Invoke();
         ModelChanged();
     }

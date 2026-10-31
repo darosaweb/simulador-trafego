@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Trafego.Core.Model;
 
 namespace Trafego.Core.Serialization;
@@ -19,13 +20,32 @@ public static class ProjectFile
 
     public static Project FromJson(string json)
     {
-        var project = JsonSerializer.Deserialize<Project>(json, Options)
-            ?? throw new InvalidDataException("Arquivo de projeto vazio.");
-        if (project.Format > Project.CurrentFormat)
+        var node = JsonNode.Parse(json) as JsonObject ?? throw new InvalidDataException("Arquivo de projeto vazio.");
+        var format = Prop(node, "format")?.GetValue<int>() ?? 1;
+        if (format > Project.CurrentFormat)
             throw new InvalidDataException(
-                $"Projeto no formato {project.Format}, mais novo que o suportado ({Project.CurrentFormat}).");
+                $"Projeto no formato {format}, mais novo que o suportado ({Project.CurrentFormat}).");
+        // Formato 1: uma rede só, que vira o cenário "Atual".
+        if (Prop(node, "scenarios") is null && Prop(node, "network") is { } network)
+        {
+            node.Remove(Key(node, "network")!);
+            node["scenarios"] = new JsonArray(new JsonObject { ["name"] = "Atual", ["network"] = network });
+        }
+        var project = node.Deserialize<Project>(Options) ?? throw new InvalidDataException("Arquivo de projeto vazio.");
+        if (project.Scenarios.Count == 0) project.Scenarios.Add(new Scenario());
+        project.ActiveScenario = Math.Clamp(project.ActiveScenario, 0, project.Scenarios.Count - 1);
+        project.Format = Project.CurrentFormat;
         return project;
     }
+
+    private static string? Key(JsonObject node, string name) =>
+        node.Select(p => p.Key).FirstOrDefault(k => string.Equals(k, name, StringComparison.OrdinalIgnoreCase));
+
+    private static JsonNode? Prop(JsonObject node, string name) => Key(node, name) is { } k ? node[k] : null;
+
+    /// <summary>Cópia independente de uma rede (mesmos ids).</summary>
+    public static Network CloneNetwork(Network network) =>
+        JsonSerializer.Deserialize<Network>(JsonSerializer.Serialize(network, Options), Options)!;
 
     /// <summary>Grava o projeto; o caminho da foto vira relativo à pasta do arquivo.</summary>
     public static void Save(Project project, string path)
