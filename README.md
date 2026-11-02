@@ -26,6 +26,13 @@ ficam em `docs/img` e mostram o exemplo `samples/cruzamento.trafego.json`. O PDF
 se quiser, os resultados; quem recebe abre por Arquivo → Abrir projeto ou pacote… (ou traz os cenários por
 Cenários → Importar de outro projeto…).
 
+**Balsas:** um link sobre a água marcado como travessia de balsa simula a fila na rampa, o embarque até lotar o
+convés, a travessia em bloco e o desembarque, com ida e volta e várias embarcações. O convés pode ter várias faixas
+lado a lado, e a espera pode ser num pátio de várias faixas que enche e embarca uma faixa de cada vez. Os resultados (espera,
+ocupação, quem ficou para a próxima) entram na comparação de cenários. Exemplo: `samples/balsa.trafego.json`.
+O controle é feito passo a passo pelo libsumo (`src/Trafego.Sumo/FerrySystem.cs`); no Avaliar, cada replicação
+com balsa roda num processo do próprio programa (`Trafego.exe --replicacao`), para continuar em paralelo.
+
 **Contador de Vias** ([contador/](contador/LEIA-ME.md)): app de celular (PWA, funciona offline) para contar
 carros e caminhões em campo. O CSV dele entra na demanda por **Rede → Demanda… → Importar contagens…**.
 Publicado pelo GitHub Pages em `https://darosaweb.github.io/simulador-trafego/contador/`.
@@ -171,5 +178,7 @@ Parar (uma replicação, marcada como parcial se foi interrompida).
 4. **Semáforos** (feita): controladores de tempo fixo, grupos, planos, tabela de horários, cores na simulação.
 5. **Demanda** (feita): intervalos de tempo, volume por entrada e intervalo, matriz O/D, rotas com participação.
 6. **Resultados e comparação** (feita): medições, indicadores da rede, links, replicações, comparação entre cenários.
+7. **Balsas** (feita): travessia com fila na rampa ou em pátio de várias faixas, convés de várias faixas, embarque
+   até lotar, ida e volta, várias embarcações, resultados.
 
 Avalonia 12 exige o compilador do SDK .NET 9+/10; com o SDK 8 instalado, fica na 11.3.

@@ -58,6 +58,7 @@ public static class Validation
             Warn(dup.First().Id, $"Há mais de uma entrada no link {dup.Key}; os volumes se somam.");
 
         CheckSignals(net, Error, Warn);
+        CheckFerries(net, Error, Warn);
         CheckDemand(net, Error);
         CheckMeasurements(net, Error);
 
@@ -194,4 +195,82 @@ public static class Validation
     public static string NameOf(Network net, int id) =>
         id == ConflictRule.MainLine ? "fluxo principal"
         : net.FindLink(id)?.Name ?? net.FindConnector(id)?.Name ?? net.FindInput(id)?.Name ?? $"#{id}";
+
+    /// <summary>
+    /// Balsas: a travessia é um link de uma faixa, sobre a água, em que só se chega por conectores no começo e
+    /// de onde só se sai por conectores no fim (os veículos embarcam na rampa e desembarcam do outro lado).
+    /// </summary>
+    private static void CheckFerries(Network net, Action<int, string> error, Action<int, string> warn)
+    {
+        var used = new Dictionary<int, Ferry>();
+        foreach (var f in net.Ferries)
+        {
+            if (!(f.DeckLength >= Ferry.MinDeck)) error(f.LinkId, $"{f.Name}: o convés deve ter pelo menos {Ferry.MinDeck:0} m.");
+            if (!(f.CrossingMinutes > 0)) error(f.LinkId, $"{f.Name}: o tempo de travessia deve ser maior que zero.");
+            if (!(f.MaxWaitMinutes >= 0)) error(f.LinkId, $"{f.Name}: a espera máxima não pode ser negativa.");
+            if (f.Vessels < 1) error(f.LinkId, $"{f.Name}: precisa de pelo menos 1 embarcação.");
+            if (f.DeckLanes < 1) error(f.LinkId, $"{f.Name}: o convés precisa de pelo menos 1 faixa.");
+            if (f.ReturnLinkId == f.LinkId) error(f.LinkId, $"{f.Name}: a volta precisa ser outro link (o do sentido contrário).");
+            foreach (var (linkId, role) in new[] { (f.LinkId, "ida"), (f.ReturnLinkId ?? -1, "volta") })
+            {
+                if (linkId < 0) continue;
+                if (net.FindLink(linkId) is not { } link) { error(f.LinkId, $"{f.Name}: o link da {role} não existe."); continue; }
+                if (used.TryGetValue(linkId, out var other) && other != f)
+                    error(f.LinkId, $"{f.Name}: {link.Name} já é a travessia de {other.Name}.");
+                used[linkId] = f;
+                CheckCrossing(net, f, link, role, error, warn);
+            }
+            for (var dir = 0; dir < 2; dir++)
+                if (f.YardOf(dir) is { } yard)
+                    CheckYard(net, f, yard, dir == 0 ? f.LinkId : f.ReturnLinkId, dir == 0 ? "ida" : "volta", error, warn);
+        }
+    }
+
+    private static void CheckCrossing(Network net, Ferry f, Link link, string role, Action<int, string> error, Action<int, string> warn)
+    {
+        var where = $"{f.Name} ({role}, {link.Name})";
+        if (link.Points.Count < 2) return;
+        var length = link.Axis().Length;
+        if (link.Lanes.Count != 1) error(link.Id, $"{where}: a travessia deve ter 1 faixa (os veículos ficam em fila no convés).");
+        var deck = f.LinearDeck;
+        if (length < deck + 20)
+            error(link.Id, f.DeckLanes > 1
+                ? $"{where}: a travessia precisa ter pelo menos {deck + 20:0} m (na simulação as {f.DeckLanes} faixas do convés ficam em fila, somando {deck:0} m, mais 20 m)."
+                : $"{where}: a travessia precisa ser pelo menos 20 m mais longa que o convés ({f.DeckLength:0} m).");
+        if (net.Inputs.Any(i => i.LinkId == link.Id)) error(link.Id, $"{where}: não pode haver entrada de veículos na travessia; ponha a entrada na estrada até a rampa.");
+        var arriving = net.Connectors.Where(c => c.ToLinkId == link.Id).ToList();
+        var leaving = net.Connectors.Where(c => c.FromLinkId == link.Id).ToList();
+        if (arriving.Count == 0) error(link.Id, $"{where}: ligue a rampa ao começo da travessia com um conector.");
+        if (arriving.Any(c => c.ToS > 1)) error(link.Id, $"{where}: os conectores devem chegar no começo da travessia (é onde fica o convés).");
+        if (leaving.Count == 0) warn(link.Id, $"{where}: nenhum conector sai do fim da travessia; os veículos saem da rede ao desembarcar.");
+        if (leaving.Any(c => c.FromS < length - 1)) error(link.Id, $"{where}: os conectores devem sair do fim da travessia (onde se desembarca).");
+    }
+
+    /// <summary>
+    /// Pátio de acúmulo: um link inteiro (sem conectores no meio), de onde se chega à travessia. As ligações faixa a
+    /// faixa para dentro e para fora dele são completadas na exportação (todas as faixas recebem e todas saem).
+    /// </summary>
+    private static void CheckYard(Network net, Ferry f, int yardId, int? crossingId, string role, Action<int, string> error, Action<int, string> warn)
+    {
+        var where = $"{f.Name} (pátio da {role})";
+        if (crossingId is null) { error(f.LinkId, $"{where}: só há pátio da volta quando há link de volta."); return; }
+        if (net.FindLink(yardId) is not { } yard) { error(f.LinkId, $"{where}: o link do pátio não existe."); return; }
+        if (net.FerryOf(yardId) is not null) { error(yard.Id, $"{where}: o pátio não pode ser uma travessia."); return; }
+        if (yard.Points.Count < 2) return;
+        var length = yard.Axis().Length;
+        if (yard.Lanes.Count < 2) warn(yard.Id, $"{where}: {yard.Name} tem 1 faixa; um pátio de uma faixa é só uma fila mais longa.");
+        if (net.Connectors.Any(c => c.FromLinkId == yardId && c.FromS < length - 1 || c.ToLinkId == yardId && c.ToS > 1))
+            error(yard.Id, $"{where}: os conectores do pátio devem chegar no começo e sair do fim dele.");
+        if (net.Inputs.Any(i => i.LinkId == yardId))
+            warn(yard.Id, $"{where}: há entrada de veículos no próprio pátio; ponha-a na estrada antes dele.");
+        // Do fim do pátio se chega à travessia (por até alguns links: a rampa).
+        var reach = new HashSet<int> { yardId };
+        var frontier = new List<int> { yardId };
+        for (var hop = 0; hop < 4 && frontier.Count > 0; hop++)
+        {
+            frontier = [.. net.Connectors.Where(c => frontier.Contains(c.FromLinkId)).Select(c => c.ToLinkId).Where(reach.Add)];
+            if (reach.Contains(crossingId.Value)) return;
+        }
+        error(yard.Id, $"{where}: do fim de {yard.Name} não se chega à travessia; ligue o pátio à rampa com um conector.");
+    }
 }

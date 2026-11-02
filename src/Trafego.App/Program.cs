@@ -1,5 +1,6 @@
 using Avalonia;
 using Trafego.App.Help;
+using Trafego.Sumo;
 
 namespace Trafego.App;
 
@@ -14,6 +15,21 @@ internal static class Program
             HelpPages.Build(outputDir: dir);
             return;
         }
+        // "Trafego.exe --replicacao <pasta> <semente>": uma replicação com balsa, pedida pelo Avaliar (SumoBatch).
+        if (args is ["--replicacao", var scenarioDir, var seedText])
+        {
+            try
+            {
+                SumoBatch.RunReplication(SumoScenario.Open(scenarioDir), int.Parse(seedText));
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine(ex.Message);
+                Environment.Exit(1);
+            }
+            return;
+        }
+        SumoBatch.WorkerPath = Environment.ProcessPath;
         BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
     }
 

@@ -274,6 +274,39 @@
               <CheckBox x:Name="LinkSmooth" Grid.Row="4" Grid.Column="1" Content="Curva suave" IsCheckedChanged="OnLinkSmoothChanged" />
             </Grid>
             <TextBlock x:Name="LinkInfo" Classes="muted" Margin="0,8,0,0" />
+            <Grid ColumnDefinitions="*,Auto"><TextBlock Classes="h" Text="BALSA" /><Button Grid.Column="1" Classes="help" Tag="balsas" Click="OnHelpTopic" /></Grid>
+            <CheckBox x:Name="LinkFerryOn" Content="Travessia de balsa" IsCheckedChanged="OnLinkFerryToggled"
+                      ToolTip.Tip="O link é o caminho da balsa sobre a água: os veículos esperam na rampa, embarcam e atravessam juntos" />
+            <TextBlock x:Name="FerryReturnInfo" Classes="muted" IsVisible="False" TextWrapping="Wrap" />
+            <StackPanel x:Name="FerryFields" IsVisible="False">
+              <Grid Classes="form" ColumnDefinitions="110,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
+                <TextBlock Classes="label" Text="Nome" />
+                <TextBox x:Name="FerryName" Grid.Column="1" LostFocus="OnFerryNameCommit" KeyDown="OnNameKeyDown" />
+                <TextBlock Classes="label" Grid.Row="1" Text="Volta" />
+                <ComboBox x:Name="FerryReturn" Grid.Row="1" Grid.Column="1" HorizontalAlignment="Stretch" SelectionChanged="OnFerryReturnChanged"
+                          ToolTip.Tip="Link da travessia no sentido contrário, se a balsa também leva veículos na volta" />
+                <TextBlock Classes="label" Grid.Row="2" Text="Embarcações" />
+                <NumericUpDown x:Name="FerryVessels" Grid.Row="2" Grid.Column="1" Minimum="1" Maximum="10" Increment="1" FormatString="0" ValueChanged="OnFerryChanged" />
+                <TextBlock Classes="label" Grid.Row="3" Text="Convés (faixas)" />
+                <NumericUpDown x:Name="FerryDeckLanes" Grid.Row="3" Grid.Column="1" Minimum="1" Maximum="8" Increment="1" FormatString="0" ValueChanged="OnFerryChanged"
+                               ToolTip.Tip="Faixas do convés, lado a lado. O embarque enche uma faixa de cada vez" />
+                <TextBlock Classes="label" Grid.Row="4" Text="Por faixa (m)" />
+                <NumericUpDown x:Name="FerryDeck" Grid.Row="4" Grid.Column="1" Minimum="5" Maximum="500" Increment="5" FormatString="0" ValueChanged="OnFerryChanged"
+                               ToolTip.Tip="Comprimento útil de cada faixa do convés: nela os veículos ficam em fila, um atrás do outro" />
+                <TextBlock Classes="label" Grid.Row="5" Text="Pátio A" />
+                <ComboBox x:Name="FerryYard" Grid.Row="5" Grid.Column="1" HorizontalAlignment="Stretch" SelectionChanged="OnFerryYardChanged"
+                          ToolTip.Tip="Link de várias faixas antes da rampa onde os veículos esperam: as faixas enchem e embarcam uma de cada vez" />
+                <TextBlock x:Name="FerryReturnYardLabel" Classes="label" Grid.Row="6" Text="Pátio B" />
+                <ComboBox x:Name="FerryReturnYard" Grid.Row="6" Grid.Column="1" HorizontalAlignment="Stretch" SelectionChanged="OnFerryYardChanged"
+                          ToolTip.Tip="Pátio antes da rampa da outra margem, para a volta" />
+                <TextBlock Classes="label" Grid.Row="7" Text="Travessia (min)" />
+                <NumericUpDown x:Name="FerryCrossing" Grid.Row="7" Grid.Column="1" Minimum="0.5" Maximum="600" Increment="0.5" FormatString="0.0" ValueChanged="OnFerryChanged" />
+                <TextBlock Classes="label" Grid.Row="8" Text="Espera (min)" />
+                <NumericUpDown x:Name="FerryWait" Grid.Row="8" Grid.Column="1" Minimum="0" Maximum="600" Increment="1" FormatString="0.0" ValueChanged="OnFerryChanged"
+                               ToolTip.Tip="Atracada, a balsa sai quando lota ou depois deste tempo, o que vier primeiro" />
+              </Grid>
+              <TextBlock x:Name="FerryInfo" Classes="muted" TextWrapping="Wrap" Margin="0,6,0,0" />
+            </StackPanel>
             <Button Content="Dividir link…" Margin="0,10,0,0" Click="OnSplitLink"
                     ToolTip.Tip="Clique depois no ponto do link onde ele deve ser dividido em dois" />
             <TextBlock Classes="h" Text="MÃO DUPLA" />

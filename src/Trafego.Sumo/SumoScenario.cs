@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Trafego.Core.Model;
 
 namespace Trafego.Sumo;
@@ -23,6 +24,11 @@ public sealed class SumoScenario
     public required SimulationSettings Settings { get; init; }
     /// <summary>Rede exportada (para dar nome às medições e aos links nos resultados).</summary>
     public required Network Network { get; init; }
+    /// <summary>Balsas da rede, já nas edges do SUMO.</summary>
+    public List<FerrySetup> Ferries { get; init; } = [];
+
+    /// <summary>Rede e configuração do cenário, para abrir a pasta de novo sem rodar o netconvert (replicações em outro processo).</summary>
+    public const string StateFile = "cenario.trafego.json";
 
     public string NetPath => Path.Combine(Directory, NetFile);
     public string RoutePath => Path.Combine(Directory, RouteFile);
@@ -80,7 +86,9 @@ public sealed class SumoScenario
             Seed = seed ?? settings.Seed,
             Settings = settings,
             Network = net,
+            Ferries = FerriesOf(net, export),
         };
+        File.WriteAllText(Path.Combine(directory, StateFile), JsonSerializer.Serialize(new State(net, settings, scenario.Seed), StateOptions));
         export.Routes(scenario.BeginTime, scenario.EndTime).Save(scenario.RoutePath);
 
         var additionalFiles = new List<string>();
@@ -114,9 +122,63 @@ public sealed class SumoScenario
               <random_number>
                 <seed value="{scenario.Seed}"/>
               </random_number>
+              {(scenario.Ferries.Count > 0 ? NoTeleport : "")}
             </configuration>
             """);
         return scenario;
+    }
+
+    /// <summary>
+    /// Com balsa, a fila da rampa fica parada muito tempo esperando a embarcação: sem isto o SUMO "teleporta"
+    /// quem fica preso mais de 300 s.
+    /// </summary>
+    private const string NoTeleport = "<processing><time-to-teleport value=\"-1\"/></processing>";
+
+    private sealed record State(Network Network, SimulationSettings Settings, int Seed);
+
+    private static readonly JsonSerializerOptions StateOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        PropertyNameCaseInsensitive = true,
+    };
+
+    /// <summary>Abre um cenário já preparado (sem rodar o netconvert de novo).</summary>
+    public static SumoScenario Open(string directory)
+    {
+        var state = JsonSerializer.Deserialize<State>(File.ReadAllText(Path.Combine(directory, StateFile)), StateOptions)
+                    ?? throw new InvalidDataException("Cenário do SUMO sem " + StateFile);
+        var export = SumoExport.From(state.Network);
+        return new SumoScenario
+        {
+            Directory = directory,
+            Export = export,
+            BeginTime = state.Settings.Begin,
+            EndTime = state.Settings.End,
+            Seed = state.Seed,
+            Settings = state.Settings,
+            Network = state.Network,
+            Ferries = FerriesOf(state.Network, export),
+        };
+    }
+
+    /// <summary>Cada travessia é um link inteiro, sem cortes: uma edge só.</summary>
+    private static List<FerrySetup> FerriesOf(Network net, SumoExport export)
+    {
+        string EdgeOf(int linkId) => export.LinkPieces.TryGetValue(linkId, out var pieces) && pieces.Count == 1
+            ? pieces[0].EdgeId
+            : throw new InvalidOperationException($"A travessia {net.FindLink(linkId)?.Name} não pode ter conectores no meio.");
+        // Pátio: o último trecho do link (o que termina onde se sai para a rampa).
+        string? YardOf(int? linkId) => linkId is { } id && export.LinkPieces.TryGetValue(id, out var pieces) && pieces.Count > 0
+            ? pieces[^1].EdgeId : null;
+        return [.. net.Ferries.Select(f => new FerrySetup(f.Id, f.Name,
+            f.LinkId, EdgeOf(f.LinkId),
+            f.ReturnLinkId, f.ReturnLinkId is { } r ? EdgeOf(r) : null,
+            f.Vessels, f.DeckLength, f.CrossingMinutes * 60, f.MaxWaitMinutes * 60)
+        {
+            DeckLanes = Math.Max(1, f.DeckLanes),
+            YardEdge = YardOf(f.YardLinkId),
+            ReturnYardEdge = f.ReturnLinkId is null ? null : YardOf(f.ReturnYardLinkId),
+        })];
     }
 
     public const string DetectorFile = "medicoes.add.xml";

@@ -12,6 +12,21 @@ public sealed class Network
     public List<SignalController> SignalControllers { get; set; } = [];
     public DemandSettings Demand { get; set; } = new();
     public List<Measurement> Measurements { get; set; } = [];
+    public List<Ferry> Ferries { get; set; } = [];
+
+    public Ferry? FindFerry(int id) => Ferries.Find(f => f.Id == id);
+
+    /// <summary>Balsa que usa o link (na ida ou na volta).</summary>
+    public Ferry? FerryOf(int linkId) => Ferries.Find(f => f.Uses(linkId));
+
+    public Ferry AddFerry(Link link)
+    {
+        var f = new Ferry { Id = NewId(), Name = $"Balsa {Ferries.Count + 1}", LinkId = link.Id };
+        Ferries.Add(f);
+        return f;
+    }
+
+    public void RemoveFerry(int id) => Ferries.RemoveAll(f => f.Id == id);
 
     public Measurement? FindMeasurement(int id) => Measurements.Find(m => m.Id == id);
 
@@ -245,6 +260,10 @@ public sealed class Network
         Connectors.RemoveAll(c => c.FromLinkId == id || c.ToLinkId == id);
         Inputs.RemoveAll(i => i.LinkId == id);
         Measurements.RemoveAll(m => m.LinkId == id || m.ToLinkId == id);
+        Ferries.RemoveAll(f => f.LinkId == id);
+        foreach (var f in Ferries.Where(f => f.ReturnLinkId == id)) f.ReturnLinkId = null;
+        foreach (var f in Ferries.Where(f => f.YardLinkId == id)) f.YardLinkId = null;
+        foreach (var f in Ferries.Where(f => f.ReturnYardLinkId == id)) f.ReturnYardLinkId = null;
         PruneRules();
     }
 

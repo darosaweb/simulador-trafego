@@ -18,7 +18,8 @@ public sealed record SimSnapshot(
     int Stopped,
     double MeanSpeed,
     bool Finished,
-    IReadOnlyDictionary<string, string>? Signals = null)
+    IReadOnlyDictionary<string, string>? Signals = null,
+    IReadOnlyList<FerryView>? Ferries = null)
 {
     public static readonly SimSnapshot Empty = new(0, [], 0, 0, 0, 0, false);
 }
@@ -35,6 +36,9 @@ public sealed class LibsumoSession : IDisposable
     private static LibsumoSession? _current;
 
     private readonly SumoScenario _scenario;
+    private readonly string _prefix;
+    /// <summary>Balsas da rede (nulo se não há nenhuma).</summary>
+    public FerrySystem? Ferries { get; }
     private readonly Dictionary<string, (double Length, double Width)> _typeSize = [];
     private int _departed;
     private int _arrived;
@@ -48,15 +52,18 @@ public sealed class LibsumoSession : IDisposable
 #endif
 
     /// <param name="outputPrefix">Prefixo dos arquivos de saída desta rodada (viagens, detectores…).</param>
-    public LibsumoSession(SumoScenario scenario, string outputPrefix = AnimationPrefix)
+    /// <param name="extraArgs">Argumentos a mais para o sumo.</param>
+    public LibsumoSession(SumoScenario scenario, string outputPrefix = AnimationPrefix, IEnumerable<string>? extraArgs = null)
     {
         _scenario = scenario;
+        _prefix = outputPrefix;
+        if (scenario.Ferries.Count > 0) Ferries = new FerrySystem(scenario.Ferries);
 #if LIBSUMO
         if (SumoInstall.Home is null) throw SumoInstall.NotFound();
         if (_current is not null) throw new InvalidOperationException("Já existe uma simulação aberta.");
         AddSumoToPath();
         var args = new StringVector { "sumo" };
-        foreach (var a in scenario.SumoArgs("--output-prefix", outputPrefix)) args.Add(a);
+        foreach (var a in scenario.SumoArgs([.. extraArgs ?? [], "--output-prefix", outputPrefix])) args.Add(a);
         Simulation.start(args);
         Time = Simulation.getTime();
         _current = this;
@@ -92,6 +99,7 @@ public sealed class LibsumoSession : IDisposable
             Time = Simulation.getTime();
             _departed += Simulation.getDepartedNumber();
             _arrived += Simulation.getArrivedNumber();
+            Ferries?.Step(Time);
         }
         return Snapshot(finished);
 #else
@@ -126,12 +134,14 @@ public sealed class LibsumoSession : IDisposable
                 front.Y - fy * size.Length / 2,
                 Math.Atan2(fy, fx),
                 size.Length, size.Width, speed,
-                type == "truck"));
+                // Veículo ajustado (ex.: a bordo da balsa) ganha um tipo próprio, "truck@id".
+                type == "truck" || type.StartsWith("truck@", StringComparison.Ordinal)));
         }
         return new SimSnapshot(Time, list, _departed, _arrived, stopped,
             list.Count > 0 ? speedSum / list.Count : 0,
             finished || (Time >= _scenario.EndTime - 1e-9),
-            _scenario.Export.TrafficLightIds.Values.ToDictionary(id => id, id => TrafficLight.getRedYellowGreenState(id)));
+            _scenario.Export.TrafficLightIds.Values.ToDictionary(id => id, id => TrafficLight.getRedYellowGreenState(id)),
+            Ferries?.Views());
     }
 #endif
 
@@ -140,6 +150,12 @@ public sealed class LibsumoSession : IDisposable
         if (_closed) return;
         _closed = true;
 #if LIBSUMO
+        if (Ferries is { } f)
+        {
+            f.Finish();
+            try { FerryLog.Save(_scenario.OutputPath(_prefix, FerryLog.File), f.Logs()); }
+            catch (IOException) { }
+        }
         try { Simulation.close(); }
         finally { _current = null; }
 #endif

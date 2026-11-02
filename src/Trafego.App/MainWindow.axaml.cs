@@ -144,6 +144,114 @@ public partial class MainWindow : Window
         var ins = _editor.Network.Connectors.Count(c => c.ToLinkId == link.Id);
         LinkInfo.Text = $"Id {link.Id} · {link.Axis().Length:0.0} m · {link.Points.Count} pontos\n" +
                         $"Conectores: {ins} chegando, {outs} saindo";
+        FillFerry(link);
+    }
+
+    // ---------------------------------------------------------------- balsa (no painel do link)
+
+    private void FillFerry(Link link)
+    {
+        var net = _editor.Network;
+        var ferry = net.FerryOf(link.Id);
+        var isReturn = ferry is not null && ferry.LinkId != link.Id;
+        LinkFerryOn.IsChecked = ferry is not null;
+        LinkFerryOn.IsEnabled = !isReturn;
+        FerryReturnInfo.IsVisible = isReturn;
+        FerryFields.IsVisible = ferry is not null && !isReturn;
+        if (isReturn)
+            FerryReturnInfo.Text = $"Volta da {ferry!.Name}. Os parâmetros ficam no link de ida ({net.FindLink(ferry.LinkId)?.Name}).";
+        if (ferry is null || isReturn) return;
+
+        if (!FerryName.IsFocused) FerryName.Text = ferry.Name;
+        // Volta: qualquer outro link que não seja travessia de outra balsa.
+        var options = new List<(int, string)> { (-1, "(volta vazia)") };
+        options.AddRange(net.Links.Where(l => l.Id != link.Id && (net.FerryOf(l.Id) is null || net.FerryOf(l.Id) == ferry))
+            .Select(l => (l.Id, l.Name)));
+        SetItems(FerryReturn, options, ferry.ReturnLinkId ?? -1);
+        FerryVessels.Value = ferry.Vessels;
+        FerryDeckLanes.Value = ferry.DeckLanes;
+        FerryDeck.Value = (decimal)ferry.DeckLength;
+        // Pátio: qualquer link que não seja travessia.
+        var yards = new List<(int, string)> { (-1, "(sem pátio: fila na rampa)") };
+        yards.AddRange(net.Links.Where(l => net.FerryOf(l.Id) is null).Select(l => (l.Id, $"{l.Name} ({l.Lanes.Count} faixa{(l.Lanes.Count > 1 ? "s" : "")})")));
+        SetItems(FerryYard, yards, ferry.YardLinkId ?? -1);
+        SetItems(FerryReturnYard, yards, ferry.ReturnYardLinkId ?? -1);
+        FerryReturnYard.IsVisible = FerryReturnYardLabel.IsVisible = ferry.ReturnLinkId is not null;
+        FerryCrossing.Value = (decimal)ferry.CrossingMinutes;
+        FerryWait.Value = (decimal)ferry.MaxWaitMinutes;
+
+        // Capacidade aproximada: carros de 4,5 m e caminhões de 12 m, com 1,25 m entre eles, em cada faixa.
+        var cars = ferry.DeckLanes * (int)Math.Floor((ferry.DeckLength + Ferry.DeckSpacing) / (4.5 + Ferry.DeckSpacing));
+        var trucks = ferry.DeckLanes * (int)Math.Floor((ferry.DeckLength + Ferry.DeckSpacing) / (12 + Ferry.DeckSpacing));
+        var km = link.Axis().Length / 1000;
+        FerryInfo.Text = $"Cabem cerca de {cars} carros ou {trucks} caminhões por viagem. " +
+                         $"Travessia de {km:0.00} km em {ferry.CrossingMinutes:0.#} min (média de {km / (ferry.CrossingMinutes / 60):0} km/h). " +
+                         (ferry.ReturnLinkId is null ? "Volta vazia. " : "Leva veículos nos dois sentidos. ") +
+                         (ferry.YardLinkId is null
+                             ? "A rampa é o link ligado ao começo da travessia por um conector."
+                             : "Quem chega espera no pátio; as faixas dele enchem e embarcam uma de cada vez, pela rampa.") +
+                         (ferry.DeckLanes > 1 ? $" Na travessia o link precisa de pelo menos {ferry.LinearDeck + 20:0} m (as faixas do convés ficam em fila na simulação)." : "");
+    }
+
+    private void OnLinkFerryToggled(object? sender, RoutedEventArgs e)
+    {
+        if (_refreshing || _editor.SelectedLink is not { } link) return;
+        var net = _editor.Network;
+        if (LinkFerryOn.IsChecked == true && net.FerryOf(link.Id) is null)
+        {
+            var ferry = net.AddFerry(link);
+            SetStatus($"{ferry.Name} criada. Ligue a rampa ao começo deste link e a estrada da outra margem ao fim, com conectores.");
+        }
+        else if (LinkFerryOn.IsChecked != true && net.FerryOf(link.Id) is { } f && f.LinkId == link.Id)
+            net.RemoveFerry(f.Id);
+        _editor.Checkpoint();
+    }
+
+    private Ferry? SelectedFerry =>
+        _editor.SelectedLink is { } link && _editor.Network.FerryOf(link.Id) is { } f && f.LinkId == link.Id ? f : null;
+
+    private void OnFerryNameCommit(object? sender, RoutedEventArgs e)
+    {
+        if (SelectedFerry is not { } f || FerryName.Text is not { } text) return;
+        f.Name = text.Trim();
+        _editor.Checkpoint();
+    }
+
+    private void OnFerryReturnChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (_refreshing || SelectedFerry is not { } f || FerryReturn.SelectedItem is not ComboBoxItem { Tag: int id }) return;
+        int? value = id < 0 ? null : id;
+        if (f.ReturnLinkId == value) return;
+        f.ReturnLinkId = value;
+        _editor.Checkpoint();
+    }
+
+    private void OnFerryYardChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (_refreshing || SelectedFerry is not { } f || (sender as ComboBox)?.SelectedItem is not ComboBoxItem { Tag: int id }) return;
+        int? value = id < 0 ? null : id;
+        if (sender == FerryYard)
+        {
+            if (f.YardLinkId == value) return;
+            f.YardLinkId = value;
+        }
+        else
+        {
+            if (f.ReturnYardLinkId == value) return;
+            f.ReturnYardLinkId = value;
+        }
+        _editor.Checkpoint();
+    }
+
+    private void OnFerryChanged(object? sender, NumericUpDownValueChangedEventArgs e)
+    {
+        if (_refreshing || SelectedFerry is not { } f || e.NewValue is not { } v) return;
+        if (sender == FerryVessels) f.Vessels = (int)v;
+        else if (sender == FerryDeckLanes) f.DeckLanes = (int)v;
+        else if (sender == FerryDeck) f.DeckLength = (double)v;
+        else if (sender == FerryCrossing) f.CrossingMinutes = (double)v;
+        else if (sender == FerryWait) f.MaxWaitMinutes = (double)v;
+        _editor.Checkpoint();
     }
 
     private void FillConnector(Connector c)
@@ -1130,7 +1238,8 @@ public partial class MainWindow : Window
     private string ContextTopic()
     {
         if (_sim.Active) return HelpPages.Topic.Simulation;
-        if (_editor.SelectedLink is not null) return HelpPages.Topic.Links;
+        if (_editor.SelectedLink is { } selected)
+            return _editor.Network.FerryOf(selected.Id) is not null ? HelpPages.Topic.Ferries : HelpPages.Topic.Links;
         if (_editor.SelectedConnector is not null) return HelpPages.Topic.Connectors;
         if (_editor.SelectedInput is not null) return HelpPages.Topic.Demand;
         if (_editor.SelectedConflictInfo is not null || _editor.SelectedJunction is not null) return HelpPages.Topic.Conflicts;

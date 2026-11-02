@@ -29,9 +29,14 @@ public static class SumoInstall
 
     /// <summary>Roda uma ferramenta do SUMO e devolve a saída (stdout + stderr).</summary>
     public static ToolResult Run(string tool, IEnumerable<string> args, string workingDir, TimeSpan? timeout = null,
+        CancellationToken cancel = default) => RunProcess(Tool(tool), args, workingDir, timeout, cancel);
+
+    /// <summary>Roda um programa qualquer e devolve a saída (stdout + stderr).</summary>
+    public static ToolResult RunProcess(string exe, IEnumerable<string> args, string workingDir, TimeSpan? timeout = null,
         CancellationToken cancel = default)
     {
-        var psi = new ProcessStartInfo(Tool(tool))
+        var tool = Path.GetFileNameWithoutExtension(exe);
+        var psi = new ProcessStartInfo(exe)
         {
             WorkingDirectory = workingDir,
             RedirectStandardOutput = true,

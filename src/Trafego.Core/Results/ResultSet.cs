@@ -79,6 +79,14 @@ public sealed class MeasurementResult
     {
         MeasurementKind.Count => [("volume", "Volume (veíc/h)"), ("speed", "Velocidade (km/h)"), ("vehicles", "Veículos")],
         MeasurementKind.Queue => [("meanQueue", "Fila média (m)"), ("maxQueue", "Fila máxima (m)"), ("stops", "Paradas")],
+        MeasurementKind.Ferry =>
+        [
+            ("trips", "Viagens"), ("vehicles", "Veículos transportados"), ("occupancy", "Ocupação do convés (%)"),
+            ("meanWait", "Espera média na fila (min)"), ("maxWait", "Espera máxima (min)"),
+            ("leftBehind", "Ficaram para a viagem seguinte (veíc/viagem)"), ("maxQueue", "Fila máxima (veíc)"),
+            ("maxYard", "Máximo no pátio (veíc)"),
+            ("waitingAtEnd", "Ainda esperando no fim (veíc)"),
+        ],
         _ => [("travelTime", "Tempo de viagem (s)"), ("delay", "Atraso (s)"), ("vehicles", "Veículos")],
     };
 }

@@ -246,7 +246,7 @@ public sealed class ResultsWindow : Window
             foreach (var (key, label) in MeasurementResult.FieldsOf(kind))
                 rows.Add(($"{name}: {label}",
                     s => s.MeanMeasurements().FirstOrDefault(m => m.Name == name && m.Kind == kind)?.Total.GetValueOrDefault(key, double.NaN) ?? double.NaN,
-                    !(key is "volume" or "vehicles" or "speed")));
+                    !(key is "volume" or "vehicles" or "speed" or "trips" or "occupancy")));
 
         var grid = NewGrid(headers.Count, rows.Count + 1);
         for (var c = 0; c < headers.Count; c++) Put(grid, 0, c, Bold(headers[c], maxWidth: 200));

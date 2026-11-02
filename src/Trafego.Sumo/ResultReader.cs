@@ -25,7 +25,47 @@ public static class ResultReader
             run.Measurements.Add(result);
         }
         run.Links = ReadLinks(scenario, prefix);
+        ReadFerries(scenario, prefix, intervals, run);
         return run;
+    }
+
+    /// <summary>Balsas: o diário gravado pelo <see cref="FerrySystem"/> vira um resultado por balsa.</summary>
+    private static void ReadFerries(SumoScenario s, string prefix, List<(double Begin, double End)> intervals, RunResult run)
+    {
+        var path = s.OutputPath(prefix, FerryLog.File);
+        if (!File.Exists(path)) return;
+        List<FerryLog> logs;
+        try { logs = FerryLog.Load(path); }
+        catch (System.Text.Json.JsonException) { return; }
+        foreach (var log in logs)
+        {
+            var result = new MeasurementResult { Id = log.FerryId, Name = log.Name, Kind = MeasurementKind.Ferry };
+            foreach (var (b, e) in intervals)
+                result.Intervals.Add(new IntervalValues { Begin = b, End = e, Values = FerryValues(log, b, e) });
+            result.Total = FerryValues(log, s.BeginTime, s.EndTime + 1);
+            result.Total["waitingAtEnd"] = log.WaitingAtEnd.Sum();
+            run.Measurements.Add(result);
+        }
+    }
+
+    private static Dictionary<string, double> FerryValues(FerryLog log, double begin, double end)
+    {
+        // Viagens com carga possível (ida e volta); a volta vazia pela água, sem link, não conta.
+        var trips = log.Trips.Where(t => t.Direction >= 0 && t.DepartedAt >= begin && t.DepartedAt < end).ToList();
+        var waits = log.Boardings.Where(b => b[0] >= begin && b[0] < end).Select(b => b[2] / 60).ToList();
+        var queue = log.Queue.Where(q => q[0] >= begin && q[0] < end).Select(q => q[2]).ToList();
+        var yard = log.Queue.Where(q => q.Length > 3 && q[0] >= begin && q[0] < end).Select(q => q[3]).ToList();
+        return new Dictionary<string, double>
+        {
+            ["trips"] = trips.Count,
+            ["vehicles"] = trips.Sum(t => t.Vehicles),
+            ["occupancy"] = trips.Count > 0 && log.DeckLength > 0 ? trips.Average(t => t.UsedLength / log.DeckLength * 100) : double.NaN,
+            ["meanWait"] = waits.Count > 0 ? waits.Average() : double.NaN,
+            ["maxWait"] = waits.Count > 0 ? waits.Max() : double.NaN,
+            ["leftBehind"] = trips.Count > 0 ? trips.Average(t => t.LeftBehind) : double.NaN,
+            ["maxQueue"] = queue.Count > 0 ? queue.Max() : double.NaN,
+            ["maxYard"] = yard.Count > 0 ? yard.Max() : double.NaN,
+        };
     }
 
     private static XElement? Load(SumoScenario s, string prefix, string file)

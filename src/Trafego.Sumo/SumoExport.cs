@@ -56,6 +56,7 @@ public sealed class SumoExport
     private readonly HashSet<int> _heads = [];
     private readonly Dictionary<string, string> _edgeEnd = [];
     private readonly List<XElement> _tlConnections = [];
+    private readonly HashSet<(string, int, string, int)> _connections = [];
     private readonly Network _net;
 
     private SumoExport(Network net)
@@ -281,6 +282,8 @@ public sealed class SumoExport
             for (var l = 0; l < c.LaneCount; l++)
                 AddConnection(inEdge, c.FromLane + l, outEdge, c.ToLane + l,
                     Shape(Polyline.Offset(geometry.Axis.Points, geometry.LaneOffsets[l])), HeadOf(c));
+            foreach (var (fromLane, toLane) in YardFan(c, from, to))
+                AddConnection(inEdge, fromLane, outEdge, toLane, head: HeadOf(c));
             return;
         }
 
@@ -306,6 +309,34 @@ public sealed class SumoExport
         if (outEdge is not null)
             for (var l = 0; l < c.LaneCount; l++)
                 AddConnection(id, l, outEdge, c.ToLane + l);
+        foreach (var (fromLane, toLane) in YardFan(c, from, to))
+        {
+            // Pelo conector-edge: as faixas do pátio entram nele, ou ele chega a todas as faixas do pátio.
+            if (fromLane < c.FromLane || fromLane >= c.FromLane + c.LaneCount)
+            {
+                if (inEdge is not null) AddConnection(inEdge, fromLane, id, toLane - c.ToLane, head: HeadOf(c));
+            }
+            else if (outEdge is not null) AddConnection(id, fromLane - c.FromLane, outEdge, toLane);
+        }
+    }
+
+    /// <summary>
+    /// Pátio de balsa: todas as faixas dele recebem quem chega e todas levam à rampa, mesmo que o conector desenhado
+    /// ligue só algumas (cada veículo vai para a faixa que lhe foi dada). Devolve as ligações (faixa de origem, faixa de
+    /// destino) que faltam, cada faixa do pátio ligada à faixa mais próxima do grupo do conector.
+    /// </summary>
+    private IEnumerable<(int From, int To)> YardFan(Connector c, Link from, Link to)
+    {
+        bool IsYard(int linkId) => _net.Ferries.Any(f => f.YardLinkId == linkId || f.ReturnYardLinkId == linkId);
+        int Near(int lane, int first) => Math.Clamp(lane, first, first + c.LaneCount - 1);
+        if (IsYard(from.Id) && c.FromS >= from.Axis().Length - 1)
+            for (var l = 0; l < from.Lanes.Count; l++)
+                if (l < c.FromLane || l >= c.FromLane + c.LaneCount)
+                    yield return (l, c.ToLane + Near(l, c.FromLane) - c.FromLane);
+        if (IsYard(to.Id) && c.ToS <= 1)
+            for (var l = 0; l < to.Lanes.Count; l++)
+                if (l < c.ToLane || l >= c.ToLane + c.LaneCount)
+                    yield return (c.FromLane + Near(l, c.ToLane) - c.ToLane, l);
     }
 
     /// <summary>(semáforo, índice do grupo) se o conector tem uma cabeça semafórica válida.</summary>
@@ -321,6 +352,7 @@ public sealed class SumoExport
     /// </summary>
     private void AddConnection(string from, int fromLane, string to, int toLane, string? shape = null, (string Tl, int Index)? head = null)
     {
+        if (!_connections.Add((from, fromLane, to, toLane))) return;
         var e = new XElement("connection",
             new XAttribute("from", from), new XAttribute("to", to),
             new XAttribute("fromLane", fromLane), new XAttribute("toLane", toLane));

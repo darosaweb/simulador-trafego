@@ -21,10 +21,11 @@ usando o **SUMO** como motor. No fim, mede e compara cenários — por exemplo, 
 11. [Medições](#11-medições)
 12. [Avaliação e resultados](#12-avaliação-e-resultados)
 13. [Comparando cenários](#13-comparando-cenários)
-14. [Atalhos de teclado](#14-atalhos-de-teclado)
-15. [Arquivos](#15-arquivos)
-16. [Problemas comuns](#16-problemas-comuns)
-17. [O que ainda não faz](#17-o-que-ainda-não-faz)
+14. [Balsas](#14-balsas)
+15. [Atalhos de teclado](#15-atalhos-de-teclado)
+16. [Arquivos](#16-arquivos)
+17. [Problemas comuns](#17-problemas-comuns)
+18. [O que ainda não faz](#18-o-que-ainda-não-faz)
 
 ---
 
@@ -39,12 +40,14 @@ usando o **SUMO** como motor. No fim, mede e compara cenários — por exemplo, 
 - **FFmpeg** (opcional), só para exportar vídeo: `winget install Gyan.FFmpeg`.
 
 **Para abrir o programa**, use o atalho **daRosa Tráfego**. Ele abre com um projeto vazio. Na pasta
-`samples`, ao lado do programa, há dois exemplos para abrir em **Arquivo → Abrir**:
+`samples`, ao lado do programa, há três exemplos para abrir em **Arquivo → Abrir**:
 
 - `exemplo.trafego.json`: só a foto de um viaduto com alças, já calibrada, para você desenhar (é a base do
   passo a passo da seção 2);
 - `cruzamento.trafego.json`: um cruzamento pronto, com dois cenários (a situação atual, com preferência, e
-  uma proposta com semáforo), entradas e medições. É o das figuras deste manual.
+  uma proposta com semáforo), entradas e medições. É o das figuras deste manual;
+- `balsa.trafego.json`: uma travessia de balsa de ida e volta, sem foto, com pátio de 4 faixas numa margem e três
+  cenários (uma embarcação, duas embarcações e convés de 4 faixas) para comparar (seção 14).
 
 **Ajuda**: aperte **F1** a qualquer momento. A ajuda abre no navegador, já na seção do que você está usando
 (a ferramenta ativa ou o objeto selecionado). Os botões **?** nos títulos do painel da direita fazem o mesmo.
@@ -455,7 +458,7 @@ no mapa, o painel da direita mostra o nome dele e os botões para gerenciar os c
 
 **Para juntar projetos que você já tem em arquivos separados:** abra um deles e use **Importar…** (ou
 **Cenários → Importar de outro projeto…**) para trazer o outro. Pode escolher vários arquivos de uma vez,
-inclusive pacotes recebidos de outra pessoa (veja "Enviar o projeto para outra pessoa", na seção 15).
+inclusive pacotes recebidos de outra pessoa (veja "Enviar o projeto para outra pessoa", na seção 16).
 
 - Cada cenário importado leva o nome do arquivo, ou "arquivo · cenário" se o arquivo tiver vários cenários.
 - Se os dois projetos usam a **mesma foto** (mesmo nome de arquivo), a rede importada cai no lugar certo,
@@ -481,7 +484,98 @@ Com poucas replicações, diferenças menores que o desvio-padrão podem ser só
 
 ---
 
-## 14. Atalhos de teclado
+## 14. Balsas
+
+Uma **travessia de balsa** é simulada como na vida real: os veículos esperam na rampa, embarcam até lotar o
+convés, atravessam juntos e desembarcam do outro lado, enquanto a fila volta a crescer.
+
+**Como desenhar:**
+
+1. Desenhe a estrada até a **rampa** da margem A, como um link comum.
+2. Desenhe a **travessia** como um link de **1 faixa** sobre a água, da rampa A até a margem B.
+3. Desenhe a estrada que sai da margem B.
+4. Ligue a rampa ao **começo** da travessia e o **fim** da travessia à estrada da margem B, com conectores.
+5. Selecione o link da travessia e, no painel, marque **Travessia de balsa**. O link fica azul, tracejado, com a
+   balsa atracada no começo dele, do tamanho do convés.
+
+![Balsa atravessando com os carros a bordo](img/balsa.jpg)
+
+**Parâmetros** (no painel do link da travessia):
+
+| Campo | O que é |
+|---|---|
+| Nome | aparece nos resultados ("Balsa 1") |
+| Volta | o link da travessia no sentido contrário, se a balsa também leva veículos na volta; sem ele, volta vazia |
+| Embarcações | quantas fazem a travessia. Começam espalhadas por igual no ciclo de ida e volta (com 6, uma a cada sexto do ciclo); cada margem atende uma de cada vez, e quem chega com a margem ocupada espera ao largo, na ordem de chegada |
+| Convés (faixas) | faixas do convés, lado a lado; o embarque enche uma faixa de cada vez |
+| Por faixa (m) | comprimento útil de cada faixa: nela os veículos ficam em fila, a 1 m um do outro. Caminhão ocupa mais que carro; se o próximo não cabe no resto da faixa, vai para a seguinte e a sobra fica vazia |
+| Pátio A | o link de várias faixas antes da rampa onde os veículos esperam (veja abaixo); sem ele, a fila fica na rampa |
+| Pátio B | o mesmo na outra margem, para a volta (só aparece com link de volta) |
+| Travessia (min) | tempo da partida até atracar do outro lado (a balsa acelera, navega e freia) |
+| Espera (min) | espera máxima: atracada, a balsa sai quando lota **ou** depois deste tempo, o que vier primeiro |
+
+O painel mostra quantos carros (ou caminhões) cabem por viagem e a velocidade média da travessia.
+
+**Pátio de acúmulo:** em muitas travessias os veículos esperam num pátio de várias faixas e sobem na balsa por uma
+rampa de uma faixa só. Desenhe o pátio como um link com as faixas que ele tem, entre a estrada e a rampa, e escolha
+esse link em **Pátio A** (ou **Pátio B**). Então:
+
+- o pátio junta **uma carga de balsa**: recebe veículos até completar o que cabe no convés (ou até encher, se
+  for menor que isso). Quem chega depois espera na estrada, antes da entrada do pátio;
+- dentro dele, quem chega vai para a faixa que está enchendo, até o fim dela; cheia, passa a encher a próxima;
+- quando a balsa atraca, o pátio entrega a carga: embarca a faixa mais antiga inteira, um veículo de cada vez pela
+  rampa, depois a seguinte;
+- com a carga completa (o próximo da fila já não caberia no convés, ou o pátio encheu), só entra na balsa quem
+  estava no pátio: ele fica fechado até a balsa partir e só então volta a receber, para preparar a carga da próxima.
+  Entregue a carga, a balsa parte na hora; a espera máxima não interrompe uma entrega em andamento;
+- com pouca demanda (o pátio não chega a completar uma carga e não há fila), ele segue aberto: quem chega passa por
+  ele e embarca, até a balsa lotar ou dar a espera máxima;
+- no pátio os veículos param encostados como no convés (1,25 m entre eles), então um pátio do comprimento do convés
+  comporta a mesma carga. Mas o SUMO tira alguns metros das pontas do pátio para as junções (num pátio de 4 faixas,
+  uns 5 m): para ele comportar uma carga cheia, desenhe-o uns 6 m mais longo que o convés;
+- se o pátio comporta menos que uma carga do convés, a balsa sai com o que coube nele: o resultado mostra que o pátio
+  é pequeno para a balsa.
+
+Basta um conector da estrada até o pátio e um do pátio até a rampa: o programa liga todas as faixas do pátio na
+entrada e na saída. O pátio precisa ser um link inteiro, com os conectores chegando no começo e saindo do fim.
+
+![Pátio de 4 faixas enchendo na margem A e a balsa de convés de 4 faixas voltando carregada](img/balsa-patio.jpg)
+
+**Convés de várias faixas:** no desenho a balsa tem as faixas lado a lado e cada veículo fica na sua. Na simulação
+do SUMO o convés é uma fila só, com as faixas uma atrás da outra; por isso a travessia precisa ter pelo menos o
+comprimento das faixas somadas mais 20 m (4 faixas de 25 m pedem 124 m). O painel mostra esse mínimo.
+
+**Ida e volta:** desenhe também a estrada até a rampa da margem B, a travessia de volta (da B para a A) e a
+estrada que sai da margem A, ligadas da mesma forma. No link de ida, escolha esse link em **Volta**. A balsa
+desembarca na B, embarca quem espera lá e volta com carga.
+
+**Na simulação**, a balsa aparece como um casco branco com borda framboesa e os veículos por cima. Ao embarcar
+cada um vai para a sua vaga; na travessia andam juntos, como um bloco; ao atracar desembarcam dirigindo
+normalmente.
+
+**Resultados:** cada balsa entra nos resultados e na comparação de cenários, como uma medição:
+
+- viagens e veículos transportados;
+- ocupação média do convés (%);
+- espera média e máxima na fila (do momento em que o veículo para na fila até embarcar);
+- quantos ficaram para a viagem seguinte, por viagem;
+- a maior fila (na rampa, no pátio e antes dele) e, com pátio, o máximo de veículos dentro dele;
+- quantos ainda esperavam no fim da simulação.
+
+Assim dá para comparar, por exemplo, uma balsa × duas, ou um convés maior. O exemplo `samples/balsa.trafego.json`
+traz exatamente isso, com um pátio de 4 faixas na margem A: avalie os três cenários (**Avaliar** com **todos os
+cenários**) e compare uma embarcação, duas embarcações e uma embarcação com convés de 4 faixas.
+
+**Regras da travessia** (a verificação avisa): 1 faixa; nenhuma entrada de veículos nela (ponha a entrada na
+estrada); conectores só chegando no começo e saindo no fim; pelo menos 20 m mais longa que o convés (com várias
+faixas, que as faixas somadas). O pátio precisa levar à travessia pelo fim dele.
+
+Com balsa na rede, o SUMO não "teleporta" veículos presos, porque a fila da rampa fica parada muito tempo de
+propósito. Se a rede travar em outro lugar, os veículos ficam parados até o fim, em vez de sumir.
+
+---
+
+## 15. Atalhos de teclado
 
 | Atalho | Ação |
 |---|---|
@@ -498,7 +592,7 @@ Com poucas replicações, diferenças menores que o desvio-padrão podem ser só
 
 ---
 
-## 15. Arquivos
+## 16. Arquivos
 
 Para um projeto salvo como `cenario.trafego.json`:
 
@@ -533,7 +627,7 @@ gerou: se for mais nova que a de quem recebe, aparece um aviso. Quem recebe prec
 
 ---
 
-## 16. Problemas comuns
+## 17. Problemas comuns
 
 **"SUMO não encontrado"**: instale o Eclipse SUMO e confira se a variável `SUMO_HOME` existe. Depois de
 instalar, feche e abra o terminal e recompile o programa.
@@ -562,7 +656,7 @@ a outra via com um conector.
 
 ---
 
-## 17. O que ainda não faz
+## 18. O que ainda não faz
 
 - Link que cruza outro link no meio do caminho não vira interseção: use conectores no cruzamento.
 - Semáforos só de tempo fixo (sem atuação por detectores) e só em conectores.

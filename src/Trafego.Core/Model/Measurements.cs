@@ -8,6 +8,8 @@ public enum MeasurementKind
     Queue,
     /// <summary>Tempo de viagem e atraso entre dois pontos.</summary>
     TravelTime,
+    /// <summary>Só nos resultados: o desempenho de uma balsa (não é colocada no mapa como medição).</summary>
+    Ferry,
 }
 
 /// <summary>
@@ -35,6 +37,7 @@ public sealed class Measurement
     {
         MeasurementKind.Count => "Contagem",
         MeasurementKind.Queue => "Fila",
+        MeasurementKind.Ferry => "Balsa",
         _ => "Tempo de viagem",
     };
 }

@@ -1,0 +1,1199 @@
+{
+  "format": 2,
+  "background": null,
+  "calibration": null,
+  "scenarios": [
+    {
+      "name": "Uma embarca\u00E7\u00E3o",
+      "network": {
+        "links": [
+          {
+            "id": 1,
+            "name": "Estrada A (at\u00E9 o p\u00E1tio)",
+            "points": [
+              {
+                "x": -480,
+                "y": -80,
+                "length": 486.6210024238576
+              },
+              {
+                "x": -330,
+                "y": -25,
+                "length": 330.94561486745823
+              },
+              {
+                "x": -210,
+                "y": 3,
+                "length": 210.02142747824567
+              },
+              {
+                "x": -175,
+                "y": 5,
+                "length": 175.07141400011596
+              }
+            ],
+            "smooth": true,
+            "lanes": [
+              {
+                "width": 3.5
+              }
+            ],
+            "speedKmh": 60
+          },
+          {
+            "id": 2,
+            "name": "P\u00E1tio A",
+            "points": [
+              {
+                "x": -140,
+                "y": -2,
+                "length": 140.0142849854971
+              },
+              {
+                "x": -60,
+                "y": 0,
+                "length": 60
+              }
+            ],
+            "smooth": false,
+            "lanes": [
+              {
+                "width": 3.5
+              },
+              {
+                "width": 3.5
+              },
+              {
+                "width": 3.5
+              },
+              {
+                "width": 3.5
+              }
+            ],
+            "speedKmh": 20
+          },
+          {
+            "id": 3,
+            "name": "Rampa A",
+            "points": [
+              {
+                "x": -35,
+                "y": 0,
+                "length": 35
+              },
+              {
+                "x": -12,
+                "y": 0,
+                "length": 12
+              }
+            ],
+            "smooth": false,
+            "lanes": [
+              {
+                "width": 3.5
+              }
+            ],
+            "speedKmh": 20
+          },
+          {
+            "id": 4,
+            "name": "Travessia A \u2192 B",
+            "points": [
+              {
+                "x": 0,
+                "y": 0,
+                "length": 0
+              },
+              {
+                "x": 300,
+                "y": -45,
+                "length": 303.35622624235026
+              },
+              {
+                "x": 600,
+                "y": 0,
+                "length": 600
+              }
+            ],
+            "smooth": true,
+            "lanes": [
+              {
+                "width": 3.5
+              }
+            ],
+            "speedKmh": 20
+          },
+          {
+            "id": 5,
+            "name": "Estrada B (sa\u00EDda)",
+            "points": [
+              {
+                "x": 612,
+                "y": 0,
+                "length": 612
+              },
+              {
+                "x": 780,
+                "y": -30,
+                "length": 780.5767098754612
+              },
+              {
+                "x": 980,
+                "y": -90,
+                "length": 984.1239759298622
+              }
+            ],
+            "smooth": true,
+            "lanes": [
+              {
+                "width": 3.5
+              }
+            ],
+            "speedKmh": 60
+          },
+          {
+            "id": 6,
+            "name": "Estrada B (at\u00E9 a rampa)",
+            "points": [
+              {
+                "x": 980,
+                "y": 100,
+                "length": 985.08882848198
+              },
+              {
+                "x": 780,
+                "y": 60,
+                "length": 782.3042886243178
+              },
+              {
+                "x": 612,
+                "y": 30,
+                "length": 612.7348529339587
+              }
+            ],
+            "smooth": true,
+            "lanes": [
+              {
+                "width": 3.5
+              }
+            ],
+            "speedKmh": 60
+          },
+          {
+            "id": 7,
+            "name": "Travessia B \u2192 A",
+            "points": [
+              {
+                "x": 600,
+                "y": 30,
+                "length": 600.7495318350236
+              },
+              {
+                "x": 300,
+                "y": 75,
+                "length": 309.23292192132453
+              },
+              {
+                "x": 0,
+                "y": 30,
+                "length": 30
+              }
+            ],
+            "smooth": true,
+            "lanes": [
+              {
+                "width": 3.5
+              }
+            ],
+            "speedKmh": 20
+          },
+          {
+            "id": 8,
+            "name": "Estrada A (sa\u00EDda)",
+            "points": [
+              {
+                "x": -12,
+                "y": 30,
+                "length": 32.31098884280702
+              },
+              {
+                "x": -200,
+                "y": 60,
+                "length": 208.806130178211
+              },
+              {
+                "x": -420,
+                "y": 110,
+                "length": 434.1658669218482
+              }
+            ],
+            "smooth": true,
+            "lanes": [
+              {
+                "width": 3.5
+              }
+            ],
+            "speedKmh": 60
+          }
+        ],
+        "connectors": [
+          {
+            "id": 9,
+            "name": "Entrada do p\u00E1tio A",
+            "fromLinkId": 1,
+            "fromLane": 0,
+            "fromS": 318.1933772431725,
+            "toLinkId": 2,
+            "toLane": 0,
+            "toS": 0,
+            "laneCount": 1,
+            "points": [],
+            "signal": null,
+            "splitPercent": null,
+            "splitPercentTruck": null
+          },
+          {
+            "id": 10,
+            "name": "Sa\u00EDda do p\u00E1tio A",
+            "fromLinkId": 2,
+            "fromLane": 0,
+            "fromS": 80.02499609497022,
+            "toLinkId": 3,
+            "toLane": 0,
+            "toS": 0,
+            "laneCount": 1,
+            "points": [],
+            "signal": null,
+            "splitPercent": null,
+            "splitPercentTruck": null
+          },
+          {
+            "id": 11,
+            "name": "Embarque A",
+            "fromLinkId": 3,
+            "fromLane": 0,
+            "fromS": 23,
+            "toLinkId": 4,
+            "toLane": 0,
+            "toS": 0,
+            "laneCount": 1,
+            "points": [],
+            "signal": null,
+            "splitPercent": null,
+            "splitPercentTruck": null
+          },
+          {
+            "id": 12,
+            "name": "Desembarque B",
+            "fromLinkId": 4,
+            "fromLane": 0,
+            "fromS": 607.5891514514425,
+            "toLinkId": 5,
+            "toLane": 0,
+            "toS": 0,
+            "laneCount": 1,
+            "points": [],
+            "signal": null,
+            "splitPercent": null,
+            "splitPercentTruck": null
+          },
+          {
+            "id": 13,
+            "name": "Rampa B",
+            "fromLinkId": 6,
+            "fromLane": 0,
+            "fromS": 374.62099020414956,
+            "toLinkId": 7,
+            "toLane": 0,
+            "toS": 0,
+            "laneCount": 1,
+            "points": [],
+            "signal": null,
+            "splitPercent": null,
+            "splitPercentTruck": null
+          },
+          {
+            "id": 14,
+            "name": "Desembarque A",
+            "fromLinkId": 7,
+            "fromLane": 0,
+            "fromS": 607.5891514514423,
+            "toLinkId": 8,
+            "toLane": 0,
+            "toS": 0,
+            "laneCount": 1,
+            "points": [],
+            "signal": null,
+            "splitPercent": null,
+            "splitPercentTruck": null
+          }
+        ],
+        "inputs": [
+          {
+            "id": 15,
+            "name": "Chegada margem A",
+            "linkId": 1,
+            "volumeVph": 50,
+            "volumes": [],
+            "truckShare": 0.1
+          },
+          {
+            "id": 16,
+            "name": "Chegada margem B",
+            "linkId": 6,
+            "volumeVph": 35,
+            "volumes": [],
+            "truckShare": 0.1
+          }
+        ],
+        "conflictRules": [],
+        "junctions": [],
+        "signalControllers": [],
+        "demand": {
+          "sliceStarts": [
+            0
+          ],
+          "matrix": [],
+          "routeChoices": []
+        },
+        "measurements": [
+          {
+            "id": 18,
+            "name": "Tempo A \u2192 B",
+            "kind": 2,
+            "linkId": 1,
+            "s": 10,
+            "toLinkId": 5,
+            "toS": 369.5461324445878,
+            "queueLength": 150
+          },
+          {
+            "id": 19,
+            "name": "Tempo B \u2192 A",
+            "kind": 2,
+            "linkId": 6,
+            "s": 10,
+            "toLinkId": 8,
+            "toS": 406.01818977697803,
+            "queueLength": 150
+          }
+        ],
+        "ferries": [
+          {
+            "id": 17,
+            "name": "Balsa do rio",
+            "linkId": 4,
+            "returnLinkId": 7,
+            "vessels": 1,
+            "deckLength": 45,
+            "deckLanes": 1,
+            "yardLinkId": 2,
+            "returnYardLinkId": null,
+            "crossingMinutes": 6,
+            "maxWaitMinutes": 10,
+            "linearDeck": 45
+          }
+        ],
+        "nextId": 20
+      }
+    },
+    {
+      "name": "Duas embarca\u00E7\u00F5es",
+      "network": {
+        "links": [
+          {
+            "id": 1,
+            "name": "Estrada A (at\u00E9 o p\u00E1tio)",
+            "points": [
+              {
+                "x": -480,
+                "y": -80,
+                "length": 486.6210024238576
+              },
+              {
+                "x": -330,
+                "y": -25,
+                "length": 330.94561486745823
+              },
+              {
+                "x": -210,
+                "y": 3,
+                "length": 210.02142747824567
+              },
+              {
+                "x": -175,
+                "y": 5,
+                "length": 175.07141400011596
+              }
+            ],
+            "smooth": true,
+            "lanes": [
+              {
+                "width": 3.5
+              }
+            ],
+            "speedKmh": 60
+          },
+          {
+            "id": 2,
+            "name": "P\u00E1tio A",
+            "points": [
+              {
+                "x": -140,
+                "y": -2,
+                "length": 140.0142849854971
+              },
+              {
+                "x": -60,
+                "y": 0,
+                "length": 60
+              }
+            ],
+            "smooth": false,
+            "lanes": [
+              {
+                "width": 3.5
+              },
+              {
+                "width": 3.5
+              },
+              {
+                "width": 3.5
+              },
+              {
+                "width": 3.5
+              }
+            ],
+            "speedKmh": 20
+          },
+          {
+            "id": 3,
+            "name": "Rampa A",
+            "points": [
+              {
+                "x": -35,
+                "y": 0,
+                "length": 35
+              },
+              {
+                "x": -12,
+                "y": 0,
+                "length": 12
+              }
+            ],
+            "smooth": false,
+            "lanes": [
+              {
+                "width": 3.5
+              }
+            ],
+            "speedKmh": 20
+          },
+          {
+            "id": 4,
+            "name": "Travessia A \u2192 B",
+            "points": [
+              {
+                "x": 0,
+                "y": 0,
+                "length": 0
+              },
+              {
+                "x": 300,
+                "y": -45,
+                "length": 303.35622624235026
+              },
+              {
+                "x": 600,
+                "y": 0,
+                "length": 600
+              }
+            ],
+            "smooth": true,
+            "lanes": [
+              {
+                "width": 3.5
+              }
+            ],
+            "speedKmh": 20
+          },
+          {
+            "id": 5,
+            "name": "Estrada B (sa\u00EDda)",
+            "points": [
+              {
+                "x": 612,
+                "y": 0,
+                "length": 612
+              },
+              {
+                "x": 780,
+                "y": -30,
+                "length": 780.5767098754612
+              },
+              {
+                "x": 980,
+                "y": -90,
+                "length": 984.1239759298622
+              }
+            ],
+            "smooth": true,
+            "lanes": [
+              {
+                "width": 3.5
+              }
+            ],
+            "speedKmh": 60
+          },
+          {
+            "id": 6,
+            "name": "Estrada B (at\u00E9 a rampa)",
+            "points": [
+              {
+                "x": 980,
+                "y": 100,
+                "length": 985.08882848198
+              },
+              {
+                "x": 780,
+                "y": 60,
+                "length": 782.3042886243178
+              },
+              {
+                "x": 612,
+                "y": 30,
+                "length": 612.7348529339587
+              }
+            ],
+            "smooth": true,
+            "lanes": [
+              {
+                "width": 3.5
+              }
+            ],
+            "speedKmh": 60
+          },
+          {
+            "id": 7,
+            "name": "Travessia B \u2192 A",
+            "points": [
+              {
+                "x": 600,
+                "y": 30,
+                "length": 600.7495318350236
+              },
+              {
+                "x": 300,
+                "y": 75,
+                "length": 309.23292192132453
+              },
+              {
+                "x": 0,
+                "y": 30,
+                "length": 30
+              }
+            ],
+            "smooth": true,
+            "lanes": [
+              {
+                "width": 3.5
+              }
+            ],
+            "speedKmh": 20
+          },
+          {
+            "id": 8,
+            "name": "Estrada A (sa\u00EDda)",
+            "points": [
+              {
+                "x": -12,
+                "y": 30,
+                "length": 32.31098884280702
+              },
+              {
+                "x": -200,
+                "y": 60,
+                "length": 208.806130178211
+              },
+              {
+                "x": -420,
+                "y": 110,
+                "length": 434.1658669218482
+              }
+            ],
+            "smooth": true,
+            "lanes": [
+              {
+                "width": 3.5
+              }
+            ],
+            "speedKmh": 60
+          }
+        ],
+        "connectors": [
+          {
+            "id": 9,
+            "name": "Entrada do p\u00E1tio A",
+            "fromLinkId": 1,
+            "fromLane": 0,
+            "fromS": 318.1933772431725,
+            "toLinkId": 2,
+            "toLane": 0,
+            "toS": 0,
+            "laneCount": 1,
+            "points": [],
+            "signal": null,
+            "splitPercent": null,
+            "splitPercentTruck": null
+          },
+          {
+            "id": 10,
+            "name": "Sa\u00EDda do p\u00E1tio A",
+            "fromLinkId": 2,
+            "fromLane": 0,
+            "fromS": 80.02499609497022,
+            "toLinkId": 3,
+            "toLane": 0,
+            "toS": 0,
+            "laneCount": 1,
+            "points": [],
+            "signal": null,
+            "splitPercent": null,
+            "splitPercentTruck": null
+          },
+          {
+            "id": 11,
+            "name": "Embarque A",
+            "fromLinkId": 3,
+            "fromLane": 0,
+            "fromS": 23,
+            "toLinkId": 4,
+            "toLane": 0,
+            "toS": 0,
+            "laneCount": 1,
+            "points": [],
+            "signal": null,
+            "splitPercent": null,
+            "splitPercentTruck": null
+          },
+          {
+            "id": 12,
+            "name": "Desembarque B",
+            "fromLinkId": 4,
+            "fromLane": 0,
+            "fromS": 607.5891514514425,
+            "toLinkId": 5,
+            "toLane": 0,
+            "toS": 0,
+            "laneCount": 1,
+            "points": [],
+            "signal": null,
+            "splitPercent": null,
+            "splitPercentTruck": null
+          },
+          {
+            "id": 13,
+            "name": "Rampa B",
+            "fromLinkId": 6,
+            "fromLane": 0,
+            "fromS": 374.62099020414956,
+            "toLinkId": 7,
+            "toLane": 0,
+            "toS": 0,
+            "laneCount": 1,
+            "points": [],
+            "signal": null,
+            "splitPercent": null,
+            "splitPercentTruck": null
+          },
+          {
+            "id": 14,
+            "name": "Desembarque A",
+            "fromLinkId": 7,
+            "fromLane": 0,
+            "fromS": 607.5891514514423,
+            "toLinkId": 8,
+            "toLane": 0,
+            "toS": 0,
+            "laneCount": 1,
+            "points": [],
+            "signal": null,
+            "splitPercent": null,
+            "splitPercentTruck": null
+          }
+        ],
+        "inputs": [
+          {
+            "id": 15,
+            "name": "Chegada margem A",
+            "linkId": 1,
+            "volumeVph": 50,
+            "volumes": [],
+            "truckShare": 0.1
+          },
+          {
+            "id": 16,
+            "name": "Chegada margem B",
+            "linkId": 6,
+            "volumeVph": 35,
+            "volumes": [],
+            "truckShare": 0.1
+          }
+        ],
+        "conflictRules": [],
+        "junctions": [],
+        "signalControllers": [],
+        "demand": {
+          "sliceStarts": [
+            0
+          ],
+          "matrix": [],
+          "routeChoices": []
+        },
+        "measurements": [
+          {
+            "id": 18,
+            "name": "Tempo A \u2192 B",
+            "kind": 2,
+            "linkId": 1,
+            "s": 10,
+            "toLinkId": 5,
+            "toS": 369.5461324445878,
+            "queueLength": 150
+          },
+          {
+            "id": 19,
+            "name": "Tempo B \u2192 A",
+            "kind": 2,
+            "linkId": 6,
+            "s": 10,
+            "toLinkId": 8,
+            "toS": 406.01818977697803,
+            "queueLength": 150
+          }
+        ],
+        "ferries": [
+          {
+            "id": 17,
+            "name": "Balsa do rio",
+            "linkId": 4,
+            "returnLinkId": 7,
+            "vessels": 2,
+            "deckLength": 45,
+            "deckLanes": 1,
+            "yardLinkId": 2,
+            "returnYardLinkId": null,
+            "crossingMinutes": 6,
+            "maxWaitMinutes": 10,
+            "linearDeck": 45
+          }
+        ],
+        "nextId": 20
+      }
+    },
+    {
+      "name": "Conv\u00E9s de 4 faixas",
+      "network": {
+        "links": [
+          {
+            "id": 1,
+            "name": "Estrada A (at\u00E9 o p\u00E1tio)",
+            "points": [
+              {
+                "x": -480,
+                "y": -80,
+                "length": 486.6210024238576
+              },
+              {
+                "x": -330,
+                "y": -25,
+                "length": 330.94561486745823
+              },
+              {
+                "x": -210,
+                "y": 3,
+                "length": 210.02142747824567
+              },
+              {
+                "x": -175,
+                "y": 5,
+                "length": 175.07141400011596
+              }
+            ],
+            "smooth": true,
+            "lanes": [
+              {
+                "width": 3.5
+              }
+            ],
+            "speedKmh": 60
+          },
+          {
+            "id": 2,
+            "name": "P\u00E1tio A",
+            "points": [
+              {
+                "x": -140,
+                "y": -2,
+                "length": 140.0142849854971
+              },
+              {
+                "x": -60,
+                "y": 0,
+                "length": 60
+              }
+            ],
+            "smooth": false,
+            "lanes": [
+              {
+                "width": 3.5
+              },
+              {
+                "width": 3.5
+              },
+              {
+                "width": 3.5
+              },
+              {
+                "width": 3.5
+              }
+            ],
+            "speedKmh": 20
+          },
+          {
+            "id": 3,
+            "name": "Rampa A",
+            "points": [
+              {
+                "x": -35,
+                "y": 0,
+                "length": 35
+              },
+              {
+                "x": -12,
+                "y": 0,
+                "length": 12
+              }
+            ],
+            "smooth": false,
+            "lanes": [
+              {
+                "width": 3.5
+              }
+            ],
+            "speedKmh": 20
+          },
+          {
+            "id": 4,
+            "name": "Travessia A \u2192 B",
+            "points": [
+              {
+                "x": 0,
+                "y": 0,
+                "length": 0
+              },
+              {
+                "x": 300,
+                "y": -45,
+                "length": 303.35622624235026
+              },
+              {
+                "x": 600,
+                "y": 0,
+                "length": 600
+              }
+            ],
+            "smooth": true,
+            "lanes": [
+              {
+                "width": 3.5
+              }
+            ],
+            "speedKmh": 20
+          },
+          {
+            "id": 5,
+            "name": "Estrada B (sa\u00EDda)",
+            "points": [
+              {
+                "x": 612,
+                "y": 0,
+                "length": 612
+              },
+              {
+                "x": 780,
+                "y": -30,
+                "length": 780.5767098754612
+              },
+              {
+                "x": 980,
+                "y": -90,
+                "length": 984.1239759298622
+              }
+            ],
+            "smooth": true,
+            "lanes": [
+              {
+                "width": 3.5
+              }
+            ],
+            "speedKmh": 60
+          },
+          {
+            "id": 6,
+            "name": "Estrada B (at\u00E9 a rampa)",
+            "points": [
+              {
+                "x": 980,
+                "y": 100,
+                "length": 985.08882848198
+              },
+              {
+                "x": 780,
+                "y": 60,
+                "length": 782.3042886243178
+              },
+              {
+                "x": 612,
+                "y": 30,
+                "length": 612.7348529339587
+              }
+            ],
+            "smooth": true,
+            "lanes": [
+              {
+                "width": 3.5
+              }
+            ],
+            "speedKmh": 60
+          },
+          {
+            "id": 7,
+            "name": "Travessia B \u2192 A",
+            "points": [
+              {
+                "x": 600,
+                "y": 30,
+                "length": 600.7495318350236
+              },
+              {
+                "x": 300,
+                "y": 75,
+                "length": 309.23292192132453
+              },
+              {
+                "x": 0,
+                "y": 30,
+                "length": 30
+              }
+            ],
+            "smooth": true,
+            "lanes": [
+              {
+                "width": 3.5
+              }
+            ],
+            "speedKmh": 20
+          },
+          {
+            "id": 8,
+            "name": "Estrada A (sa\u00EDda)",
+            "points": [
+              {
+                "x": -12,
+                "y": 30,
+                "length": 32.31098884280702
+              },
+              {
+                "x": -200,
+                "y": 60,
+                "length": 208.806130178211
+              },
+              {
+                "x": -420,
+                "y": 110,
+                "length": 434.1658669218482
+              }
+            ],
+            "smooth": true,
+            "lanes": [
+              {
+                "width": 3.5
+              }
+            ],
+            "speedKmh": 60
+          }
+        ],
+        "connectors": [
+          {
+            "id": 9,
+            "name": "Entrada do p\u00E1tio A",
+            "fromLinkId": 1,
+            "fromLane": 0,
+            "fromS": 318.1933772431725,
+            "toLinkId": 2,
+            "toLane": 0,
+            "toS": 0,
+            "laneCount": 1,
+            "points": [],
+            "signal": null,
+            "splitPercent": null,
+            "splitPercentTruck": null
+          },
+          {
+            "id": 10,
+            "name": "Sa\u00EDda do p\u00E1tio A",
+            "fromLinkId": 2,
+            "fromLane": 0,
+            "fromS": 80.02499609497022,
+            "toLinkId": 3,
+            "toLane": 0,
+            "toS": 0,
+            "laneCount": 1,
+            "points": [],
+            "signal": null,
+            "splitPercent": null,
+            "splitPercentTruck": null
+          },
+          {
+            "id": 11,
+            "name": "Embarque A",
+            "fromLinkId": 3,
+            "fromLane": 0,
+            "fromS": 23,
+            "toLinkId": 4,
+            "toLane": 0,
+            "toS": 0,
+            "laneCount": 1,
+            "points": [],
+            "signal": null,
+            "splitPercent": null,
+            "splitPercentTruck": null
+          },
+          {
+            "id": 12,
+            "name": "Desembarque B",
+            "fromLinkId": 4,
+            "fromLane": 0,
+            "fromS": 607.5891514514425,
+            "toLinkId": 5,
+            "toLane": 0,
+            "toS": 0,
+            "laneCount": 1,
+            "points": [],
+            "signal": null,
+            "splitPercent": null,
+            "splitPercentTruck": null
+          },
+          {
+            "id": 13,
+            "name": "Rampa B",
+            "fromLinkId": 6,
+            "fromLane": 0,
+            "fromS": 374.62099020414956,
+            "toLinkId": 7,
+            "toLane": 0,
+            "toS": 0,
+            "laneCount": 1,
+            "points": [],
+            "signal": null,
+            "splitPercent": null,
+            "splitPercentTruck": null
+          },
+          {
+            "id": 14,
+            "name": "Desembarque A",
+            "fromLinkId": 7,
+            "fromLane": 0,
+            "fromS": 607.5891514514423,
+            "toLinkId": 8,
+            "toLane": 0,
+            "toS": 0,
+            "laneCount": 1,
+            "points": [],
+            "signal": null,
+            "splitPercent": null,
+            "splitPercentTruck": null
+          }
+        ],
+        "inputs": [
+          {
+            "id": 15,
+            "name": "Chegada margem A",
+            "linkId": 1,
+            "volumeVph": 50,
+            "volumes": [],
+            "truckShare": 0.1
+          },
+          {
+            "id": 16,
+            "name": "Chegada margem B",
+            "linkId": 6,
+            "volumeVph": 35,
+            "volumes": [],
+            "truckShare": 0.1
+          }
+        ],
+        "conflictRules": [],
+        "junctions": [],
+        "signalControllers": [],
+        "demand": {
+          "sliceStarts": [
+            0
+          ],
+          "matrix": [],
+          "routeChoices": []
+        },
+        "measurements": [
+          {
+            "id": 18,
+            "name": "Tempo A \u2192 B",
+            "kind": 2,
+            "linkId": 1,
+            "s": 10,
+            "toLinkId": 5,
+            "toS": 369.5461324445878,
+            "queueLength": 150
+          },
+          {
+            "id": 19,
+            "name": "Tempo B \u2192 A",
+            "kind": 2,
+            "linkId": 6,
+            "s": 10,
+            "toLinkId": 8,
+            "toS": 406.01818977697803,
+            "queueLength": 150
+          }
+        ],
+        "ferries": [
+          {
+            "id": 17,
+            "name": "Balsa do rio",
+            "linkId": 4,
+            "returnLinkId": 7,
+            "vessels": 1,
+            "deckLength": 25,
+            "deckLanes": 4,
+            "yardLinkId": 2,
+            "returnYardLinkId": null,
+            "crossingMinutes": 6,
+            "maxWaitMinutes": 10,
+            "linearDeck": 103.75
+          }
+        ],
+        "nextId": 20
+      }
+    }
+  ],
+  "activeScenario": 0,
+  "simulation": {
+    "startTimeOfDay": 25200,
+    "durationMinutes": 60,
+    "resultIntervalMinutes": 15,
+    "replications": 3,
+    "seed": 1,
+    "begin": 25200,
+    "end": 28800
+  }
+}

@@ -803,6 +803,7 @@ public sealed class NetworkCanvas : Control
                 DrawConflictAreas(ctx);
                 DrawHighlight(ctx);
             }
+            DrawFerries(ctx);
             DrawVehicles(ctx);
             DrawSignalHeads(ctx);
             if (!_video) DrawFocus(ctx);
@@ -817,6 +818,7 @@ public sealed class NetworkCanvas : Control
             DrawSplitLabels(ctx);
             DrawSplitPreview(ctx);
             DrawInputs(ctx);
+            DrawFerryLabels(ctx);
             DrawHandles(ctx);
             DrawConnectorPreview(ctx);
             DrawCalibration(ctx);
@@ -866,10 +868,12 @@ public sealed class NetworkCanvas : Control
         var axis = link.Axis().Points;
         var half = link.TotalWidth / 2;
         var selected = !_video && link.Id == _editor.SelectedLinkId;
+        var water = Net.FerryOf(link.Id) is not null;
         var fill = _editor.LinkOverlay is { } overlay && overlay.TryGetValue(link.Id, out var ratio) && double.IsFinite(ratio)
             ? SpeedRatioBrush(ratio)
-            : LinkFill;
-        ctx.DrawGeometry(fill, new Pen(selected ? Accent : EdgeBrush, Px(selected ? 2.5 : 1)), Ribbon(axis, -half, half));
+            : water ? WaterFill : LinkFill;
+        var edge = selected ? new Pen(Accent, Px(2.5)) : water ? new Pen(WaterEdge, Px(1.5), new DashStyle([4, 4], 0)) : new Pen(EdgeBrush, Px(1));
+        ctx.DrawGeometry(fill, edge, Ribbon(axis, -half, half));
 
         var dash = new Pen(EdgeBrush, Px(1), new DashStyle([6, 6], 0));
         for (var i = 0; i < link.Lanes.Count - 1; i++)
@@ -1270,16 +1274,92 @@ public sealed class NetworkCanvas : Control
         }
     }
 
+    private static readonly IBrush WaterFill = new SolidColorBrush(Color.FromArgb(120, 40, 110, 190));
+    private static readonly IBrush WaterEdge = new SolidColorBrush(Color.FromArgb(220, 120, 190, 255));
+    private static readonly IBrush HullFill = new SolidColorBrush(Color.FromArgb(235, 236, 240, 244));
+    private static readonly IBrush HullIdle = new SolidColorBrush(Color.FromArgb(110, 236, 240, 244));
+    private static readonly IBrush HullStroke = new SolidColorBrush(Color.Parse("#cc3467"));
+
+    private static readonly IBrush DeckLine = new SolidColorBrush(Color.FromArgb(140, 120, 130, 140));
+
+    /// <summary>
+    /// Embarcações: na simulação, onde cada uma está; fora dela, uma atracada no começo da ida, do tamanho do convés.
+    /// O casco cobre a travessia e as faixas do convés, lado a lado.
+    /// </summary>
+    private void DrawFerries(DrawingContext ctx)
+    {
+        if (_snapshot?.Ferries is { } views)
+        {
+            foreach (var v in views)
+                if (Net.FindLink(v.LinkId) is { Points.Count: >= 2 } link)
+                    DrawHull(ctx, link, v.From, v.To, v.Lanes, HullFill);
+            return;
+        }
+        if (_video) return;
+        foreach (var f in Net.Ferries)
+            if (Net.FindLink(f.LinkId) is { Points.Count: >= 2 } link && link.Axis().Length > 0)
+            {
+                var len = link.Axis().Length;
+                DrawHull(ctx, link, 0.5 / len, (f.DeckLength + 2) / len, Math.Max(1, f.DeckLanes), HullIdle);
+            }
+    }
+
+    private void DrawHull(DrawingContext ctx, Link link, double from, double to, int lanes, IBrush fill)
+    {
+        var axis = link.Axis();
+        var s0 = from * axis.Length;
+        var s1 = to * axis.Length;
+        if (s1 - s0 < 0.5) return;
+        var pts = axis.Slice(s0, s1);
+        if (pts.Count < 2) return;
+        var deck = lanes * Ferry.DeckLaneWidth;
+        var half = Math.Max(link.TotalWidth, deck) / 2 + 1.5;
+        ctx.DrawGeometry(fill, new Pen(HullStroke, Px(2)), Ribbon(pts, -half, half));
+        // Divisas das faixas do convés.
+        if (lanes < 2 || pts.Count < 2) return;
+        var inner = axis.Slice(s0 + 1, Math.Max(s0 + 1.5, s1 - 1));
+        var pen = new Pen(DeckLine, Px(1), new DashStyle([4, 3], 0));
+        for (var k = 1; k < lanes; k++)
+            ctx.DrawGeometry(null, pen, Shape(Polyline.Offset(inner, -deck / 2 + k * Ferry.DeckLaneWidth), closed: false));
+    }
+
+    /// <summary>Nome e parâmetros de cada balsa, no meio da travessia de ida.</summary>
+    private void DrawFerryLabels(DrawingContext ctx)
+    {
+        if (_snapshot is not null) return;
+        foreach (var f in Net.Ferries)
+            if (Net.FindLink(f.LinkId) is { Points.Count: >= 2 } link)
+            {
+                var axis = link.Axis();
+                var deck = f.DeckLanes > 1 ? $"{f.DeckLanes} faixas × {f.DeckLength:0} m" : $"{f.DeckLength:0} m";
+                var text = $"{f.Name} · convés {deck} · {f.CrossingMinutes:0.#} min" + (f.Vessels > 1 ? $" · {f.Vessels} embarcações" : "");
+                DrawLabel(ctx, text, axis.At(axis.Length / 2).Point);
+            }
+    }
+
     /// <summary>Veículos da simulação, coloridos pela velocidade (vermelho parado → verde a 60 km/h ou mais).</summary>
     private void DrawVehicles(DrawingContext ctx)
     {
         if (_snapshot is null) return;
         var outline = new Pen(new SolidColorBrush(Color.FromArgb(200, 0, 0, 0)), Px(1));
+        // A bordo de convés de várias faixas: na faixa do casco, não na fila da simulação.
+        var riders = new Dictionary<string, (Vec2 Center, Vec2 Forward)>();
+        foreach (var view in _snapshot.Ferries ?? [])
+        {
+            if (view.Riders.Count == 0 || Net.FindLink(view.LinkId) is not { Points.Count: >= 2 } link) continue;
+            var axis = link.Axis();
+            foreach (var r in view.Riders)
+            {
+                var at = axis.At(r.At * axis.Length);
+                riders[r.Id] = (at.Point + at.Tangent.LeftNormal() * r.Lateral, at.Tangent);
+            }
+        }
         foreach (var v in _snapshot.Vehicles)
         {
             var f = new Vec2(Math.Cos(v.Heading), Math.Sin(v.Heading));
-            var n = new Vec2(-f.Y, f.X);
             var c = new Vec2(v.X, v.Y);
+            if (riders.TryGetValue(v.Id, out var seat)) (c, f) = seat;
+            var n = new Vec2(-f.Y, f.X);
             var hl = f * (v.Length / 2);
             var hw = n * (v.Width / 2);
             var body = Shape([c + hl + hw, c + hl - hw, c - hl - hw, c - hl + hw], closed: true);

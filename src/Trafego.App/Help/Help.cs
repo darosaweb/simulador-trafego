@@ -30,6 +30,7 @@ public static class HelpPages
         public const string Measurements = "medições";
         public const string Results = "avaliação-e-resultados";
         public const string Scenarios = "comparando-cenários";
+        public const string Ferries = "balsas";
         public const string Shortcuts = "atalhos-de-teclado";
         public const string Problems = "problemas-comuns";
     }
