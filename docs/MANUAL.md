@@ -598,7 +598,7 @@ Para um projeto salvo como `cenario.trafego.json`:
 
 | Arquivo ou pasta | Conteúdo |
 |---|---|
-| `cenario.trafego.json` | o projeto: os cenários (cada um com rede, semáforos, demanda e medições) e a configuração da simulação. A foto é guardada como caminho relativo — mantenha a imagem junto. Arquivos de versões anteriores abrem normalmente, com a rede como cenário "Atual" |
+| `cenario.trafego.json` | o projeto: os cenários (cada um com rede, semáforos, demanda e medições) e a configuração da simulação. Ao salvar, a foto de fundo é copiada para a pasta do projeto (se estava em outro lugar) e guardada com caminho relativo: mova ou copie a pasta inteira e a foto vai junto. Se a foto não estiver onde foi gravada, o programa procura uma de mesmo nome ao lado do projeto. Arquivos de versões anteriores abrem normalmente, com a rede como cenário "Atual" |
 | `cenario.sumo/` | arquivos gerados para o SUMO (rede, rotas, semáforos, detectores, configuração) e as saídas das simulações |
 | `cenario.resultados/` | resultados das avaliações (`.resultado.json`) |
 

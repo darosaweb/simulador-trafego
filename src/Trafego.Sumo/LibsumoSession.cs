@@ -43,6 +43,7 @@ public sealed class LibsumoSession : IDisposable
     private int _departed;
     private int _arrived;
     private bool _closed;
+    private string? _previousDirectory;
 
     public static bool Available =>
 #if LIBSUMO
@@ -62,9 +63,22 @@ public sealed class LibsumoSession : IDisposable
         if (SumoInstall.Home is null) throw SumoInstall.NotFound();
         if (_current is not null) throw new InvalidOperationException("Já existe uma simulação aberta.");
         AddSumoToPath();
+        // O libsumo não abre caminhos com acento (ex.: "Ribeirão Preto"): falha com "unknown exception". Roda de
+        // dentro da pasta do cenário e recebe só o nome da configuração; as saídas já são relativas a ela.
         var args = new StringVector { "sumo" };
-        foreach (var a in scenario.SumoArgs([.. extraArgs ?? [], "--output-prefix", outputPrefix])) args.Add(a);
-        Simulation.start(args);
+        foreach (var a in scenario.SumoArgs([.. extraArgs ?? [], "--output-prefix", outputPrefix]))
+            args.Add(a == scenario.ConfigPath ? SumoScenario.ConfigFile : a);
+        _previousDirectory = Environment.CurrentDirectory;
+        Environment.CurrentDirectory = scenario.Directory;
+        try
+        {
+            Simulation.start(args);
+        }
+        catch
+        {
+            Environment.CurrentDirectory = _previousDirectory;
+            throw;
+        }
         Time = Simulation.getTime();
         _current = this;
 #else
@@ -157,7 +171,13 @@ public sealed class LibsumoSession : IDisposable
             catch (IOException) { }
         }
         try { Simulation.close(); }
-        finally { _current = null; }
+        finally
+        {
+            _current = null;
+            if (_previousDirectory is { } d)
+                try { Environment.CurrentDirectory = d; }
+                catch (IOException) { } // a pasta anterior sumiu
+        }
 #endif
     }
 }

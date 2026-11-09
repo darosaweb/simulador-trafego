@@ -47,23 +47,80 @@ public static class ProjectFile
     public static Network CloneNetwork(Network network) =>
         JsonSerializer.Deserialize<Network>(JsonSerializer.Serialize(network, Options), Options)!;
 
-    /// <summary>Grava o projeto; o caminho da foto vira relativo à pasta do arquivo.</summary>
+    /// <summary>
+    /// Grava o projeto; o caminho da foto vira relativo à pasta do arquivo. Uma foto que está fora dessa pasta é
+    /// copiada para junto do projeto (e o projeto passa a usar a cópia): assim a pasta leva tudo junto, e mover ou
+    /// copiar a pasta não perde a foto.
+    /// </summary>
     public static void Save(Project project, string path)
     {
         var dir = Path.GetDirectoryName(Path.GetFullPath(path))!;
+        if (project.Background is { ImagePath.Length: > 0 } current && Path.IsPathRooted(current.ImagePath) &&
+            File.Exists(current.ImagePath) && !IsInside(dir, current.ImagePath))
+            current.ImagePath = CopyNextTo(dir, current.ImagePath);
         var copy = FromJson(ToJson(project));
         if (copy.Background is { ImagePath.Length: > 0 } bg && Path.IsPathRooted(bg.ImagePath))
             bg.ImagePath = Path.GetRelativePath(dir, bg.ImagePath);
         File.WriteAllText(path, ToJson(copy));
     }
 
-    /// <summary>Lê o projeto; o caminho da foto volta a ser absoluto.</summary>
+    /// <summary>
+    /// Lê o projeto; o caminho da foto volta a ser absoluto. Se a foto não está onde foi gravada (projeto movido de
+    /// pasta sem ela no mesmo lugar relativo), usa uma de mesmo nome na pasta do projeto, se houver.
+    /// </summary>
     public static Project Load(string path)
     {
         var project = FromJson(File.ReadAllText(path));
         var dir = Path.GetDirectoryName(Path.GetFullPath(path))!;
-        if (project.Background is { ImagePath.Length: > 0 } bg && !Path.IsPathRooted(bg.ImagePath))
-            bg.ImagePath = Path.GetFullPath(Path.Combine(dir, bg.ImagePath));
+        if (project.Background is { ImagePath.Length: > 0 } bg)
+        {
+            if (!Path.IsPathRooted(bg.ImagePath))
+                bg.ImagePath = Path.GetFullPath(Path.Combine(dir, bg.ImagePath));
+            var beside = Path.Combine(dir, Path.GetFileName(bg.ImagePath));
+            if (!File.Exists(bg.ImagePath) && File.Exists(beside)) bg.ImagePath = beside;
+        }
         return project;
+    }
+
+    private static bool IsInside(string dir, string file)
+    {
+        var relative = Path.GetRelativePath(dir, file);
+        return !Path.IsPathRooted(relative) && !relative.StartsWith("..", StringComparison.Ordinal);
+    }
+
+    /// <summary>Copia o arquivo para a pasta, com o mesmo nome (ou "nome (2)"… se já há outro diferente lá).</summary>
+    private static string CopyNextTo(string dir, string file)
+    {
+        var name = Path.GetFileNameWithoutExtension(file);
+        var ext = Path.GetExtension(file);
+        for (var i = 1; ; i++)
+        {
+            var target = Path.Combine(dir, i == 1 ? name + ext : $"{name} ({i}){ext}");
+            if (File.Exists(target))
+            {
+                if (SameContent(target, file)) return target;
+                continue;
+            }
+            File.Copy(file, target);
+            return target;
+        }
+    }
+
+    private static bool SameContent(string a, string b)
+    {
+        var fa = new FileInfo(a);
+        var fb = new FileInfo(b);
+        if (fa.Length != fb.Length) return false;
+        using var sa = fa.OpenRead();
+        using var sb = fb.OpenRead();
+        var ba = new byte[81920];
+        var bb = new byte[81920];
+        int n;
+        while ((n = sa.Read(ba, 0, ba.Length)) > 0)
+        {
+            sb.ReadExactly(bb, 0, n);
+            if (!ba.AsSpan(0, n).SequenceEqual(bb.AsSpan(0, n))) return false;
+        }
+        return true;
     }
 }

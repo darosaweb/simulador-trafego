@@ -185,6 +185,71 @@ public class NetworkTests
         }
     }
 
+    /// <summary>
+    /// A foto importada de outra pasta é copiada para junto do projeto ao salvar; movido o projeto (com a foto) para
+    /// outra pasta, ele a acha de novo.
+    /// </summary>
+    [Fact]
+    public void Foto_de_fora_vai_para_a_pasta_do_projeto()
+    {
+        var root = Directory.CreateTempSubdirectory("trafego-test").FullName;
+        try
+        {
+            var downloads = Directory.CreateDirectory(Path.Combine(root, "Downloads")).FullName;
+            var original = Path.Combine(downloads, "satelite.png");
+            File.WriteAllBytes(original, [1, 2, 3, 4]);
+            var projDir = Directory.CreateDirectory(Path.Combine(root, "Ribeirão Preto")).FullName;
+            var file = Path.Combine(projDir, "projeto" + ProjectFile.Extension);
+            var project = new Project { Background = new Background { ImagePath = original } };
+
+            ProjectFile.Save(project, file);
+            var copy = Path.Combine(projDir, "satelite.png");
+            Assert.True(File.Exists(copy));
+            Assert.Equal(copy, project.Background.ImagePath); // passa a usar a cópia
+            Assert.Equal(copy, ProjectFile.Load(file).Background!.ImagePath);
+            ProjectFile.Save(project, file); // salvar de novo não duplica
+            Assert.Single(Directory.GetFiles(projDir, "satelite*"));
+
+            // Outra foto com o mesmo nome, mas diferente: não sobrescreve.
+            var other = Path.Combine(downloads, "outra");
+            Directory.CreateDirectory(other);
+            File.WriteAllBytes(Path.Combine(other, "satelite.png"), [9, 9]);
+            project.Background.ImagePath = Path.Combine(other, "satelite.png");
+            ProjectFile.Save(project, file);
+            Assert.Equal(Path.Combine(projDir, "satelite (2).png"), project.Background.ImagePath);
+
+            // Projeto e foto movidos juntos para outra pasta (o caminho relativo gravado continua valendo).
+            var moved = Directory.CreateDirectory(Path.Combine(root, "Outro lugar", "Projeto")).FullName;
+            File.Copy(file, Path.Combine(moved, "projeto" + ProjectFile.Extension));
+            File.Copy(Path.Combine(projDir, "satelite (2).png"), Path.Combine(moved, "satelite (2).png"));
+            Directory.Delete(projDir, recursive: true);
+            Assert.Equal(Path.Combine(moved, "satelite (2).png"),
+                ProjectFile.Load(Path.Combine(moved, "projeto" + ProjectFile.Extension)).Background!.ImagePath);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    /// <summary>Projeto antigo com a foto numa pasta relativa que não existe mais: acha a de mesmo nome ao lado dele.</summary>
+    [Fact]
+    public void Foto_perdida_e_procurada_ao_lado_do_projeto()
+    {
+        var dir = Directory.CreateTempSubdirectory("trafego-test").FullName;
+        try
+        {
+            var file = Path.Combine(dir, "projeto" + ProjectFile.Extension);
+            File.WriteAllText(file, ProjectFile.ToJson(new Project { Background = new Background { ImagePath = "../../sumiu/foto.jpg" } }));
+            File.WriteAllBytes(Path.Combine(dir, "foto.jpg"), [1]);
+            Assert.Equal(Path.Combine(dir, "foto.jpg"), ProjectFile.Load(file).Background!.ImagePath);
+        }
+        finally
+        {
+            Directory.Delete(dir, recursive: true);
+        }
+    }
+
     [Fact]
     public void Sentido_oposto_fica_encostado_a_esquerda_e_anda_ao_contrario()
     {
